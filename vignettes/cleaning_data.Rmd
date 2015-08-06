@@ -15,6 +15,8 @@ library(stringr)
 library(lubridate)
 ```
 
+# Paintings sales
+
 The Getty Provenance Index staff has supplied us with a CSV export of their
 database for all sales of _paintings_ made by auction houses _in London_. We
 will first load this table into the R data processing environment, and make a
@@ -207,5 +209,26 @@ sales <- sales %>%
 # Select pertinent columns of data and save for analyses
 sales <- sales %>% 
   select(cat_no, lot_no, auction_house, date, transaction_type, transaction_amt, year, month, week, yday, mday, wday, price_factor)
-save(sales, file = "../data/sales.rda")
+```
+
+# Royal Academy dates
+
+Royal Academy Archivist Mark Pomeroy. Years 1769--1982 are ready for parsing ---
+the remainder are incomplete. Here we convert the year, month, and day fields in
+the original table into formatted date columns ready for processing.
+
+```{r parse_ra_data}
+raw_ra <- read_csv(system.file("extdata", "ra_dates.csv", package = "londonauctions"), col_types = "iiiii")
+
+ra_dates <- raw_ra %>%
+  mutate(
+    start_string = paste(start_day, start_month, year, sep = "-"),
+    end_string = paste(end_day, end_month, year, sep = "-"),
+    exhib_start = start_string %>% dmy(),
+    exhib_end = end_string %>% dmy(),
+    exhib_start_day = yday(exhib_start) %>% as.integer(),
+    exhib_end_day = yday(exhib_end) %>% as.integer(),
+    exhib_year = year(exhib_start) %>% as.integer()
+  ) %>%
+  select(contains("exhib"))
 ```
