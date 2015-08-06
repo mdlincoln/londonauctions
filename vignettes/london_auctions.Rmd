@@ -188,11 +188,16 @@ sales$transaction_amt <- ifelse(sales$bracket_letter == "k", sales$transaction_a
 sum(sales$transaction_amt, na.rm = TRUE)
 ```
 
-#### Create a price factor variable using the Quintiles of transaction.amt ####
-sales$price.factor <- NA
-for (i in unique(sales$year)) {
-  print(i)
-  sales$price.factor[sales$year == i] <- quantcut(sales$transaction.amt[sales$year == i], q=seq(0, 1, by=0.2))
-}
-sales$price.factor <- factor(sales$price.factor, labels=c("1st Quintile", "2nd Quintile", "3rd Quintile", "4th Quintile", "5th Quintile"))
+## Price factor
+
+Due to inflation and deflation, it is difficult to compare absolute prices
+across the period of study. A simple solution to this problem is to categorize
+artworks into groups of most expensive and least expensive within their own
+years. The following function will group artowrks by year and split them into 5
+buckets within their year, based on their price relative to other
+
+```{r price_factor}
+sales <- sales %>% 
+  group_by(year) %>% 
+  mutate(price_factor = ntile(transaction_amt, n = 5))
 ```
