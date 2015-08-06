@@ -56,6 +56,9 @@ base_sales <- read_csv("../data-raw/all_england.csv", skip = 1, col_names = corr
 
 # Create a working data frame for all newly-generated columns
 sales <- base_sales
+
+# Number of records:
+nrow(sales)
 ```
 
 Having loaded the data, we perform several cleaning operations to extract sturctured information from the semi-structured text entered in many fields of the Getty database.
@@ -112,6 +115,8 @@ sales$wday <- wday(sales$date)
 
 ```{r eval=FALSE}
 # Differentiate price and transaction type columns ----
+# Number of records:
+nrow(sales)
 
 # Capture transaction type information recorded in the first segment of the transaction column
 sales$transaction_type <- tolower(trimws(str_match(sales$transaction, "^([A-Za-z ]+)")[,2]))
