@@ -114,11 +114,26 @@ sales$mday <- mday(sales$date)
 sales$wday <- wday(sales$date)
 ```
 
-```{r eval=FALSE}
-# Differentiate price and transaction type columns ----
+This leaves about 1858 dates that are not fully described, e.g. that have only
+the month of the sale, not the specific date. Because we are interested in the
+timing of sales at the precision of days, we must exclude these
+partially-documented sales from our analysis.
+
+```{r exclude_undated}
+sales <- filter(is.na(date))
+
 # Number of records:
 nrow(sales)
+```
+  
+## Transaction types and amounts
 
+Transaction information involves both categorical descriptions of transaction
+types (sold, bought in, etc.) and, in some cases, a recorded transaction amount.
+The Getty database concatenates this information into a single text field, so we
+will have to extract both the categorical and numeric information from it.
+
+```{r transaction_extraction}
 # Capture transaction type information recorded in the first segment of the transaction column
 sales$transaction_type <- tolower(trimws(str_match(sales$transaction, "^([A-Za-z ]+)")[,2]))
 
@@ -127,108 +142,51 @@ sales$transaction_amt <- str_match(sales$transaction, ",\\s*(\\d+[[:punct:]]?\\d
 # Fix up odd punctuation and convert to numeric
 sales$transaction_amt <- as.numeric(str_replace(sales$transaction_amt, "[[:punct:]]", "."))
 
-# Handle cases where prices cover multiple lots ----
+# Provisional sum of sale prices:
+sum(sales$transaction_amt, na.rm = TRUE)
+```
 
-# In some cases, several lots are grouped with the same transaction, so the same price has been assigned to multiple lots. This is marked one of several ways in the documentation
-sales$transaction_amt <- ifelse(str_detect(sales$transaction, "&"), sales$transaction_amt/2, sales$transaction_amt)
+In many cases, several lots are grouped with the same transaction, so the same
+price has been assigned to multiple lots. This is marked one of several ways in
+the documentation:
 
-for_lots <- sales$transaction[str_detect(sales$transaction, "for lots")]
+- `...for lots 123 & 124` In the case of two lots, the presence of an `&` is signal that the given transaction amount should be divided by 2.
+- `...for lots 123[a-d]` In the case of more than two lots per transaction, most sales are marked with a bracket notation. We can detect the number of lots indicated in this notation by checking the trailing letter (e.g. `a-d` marks 4 lots, `a-i` marks 9) and divide the transaction amount accordingly.
 
-index <- str_match(sales$transaction, "\\[a-([a-z])\\]")[,2]
-sales$transaction_amt 
-amt <- switch(
-  index,
-  NA = sales$transaction_amt,
-  c = sales$transaction_amt/3,
-  d = sales$transaction_amt/4,
-  e = sales$transaction_amt/5,
-  f = sales$transaction_amt/6,
-  g = sales$transaction_amt/7,
-  h = sales$transaction_amt/8,
-  i = sales$transaction_amt/9,
-  j = sales$transaction_amt/10,
-  k = sales$transaction_amt/11
+```{r multiple_transactions}
+# Locate transactions with two or three lots as indicated by an & symbol, and
+# divide acordingly
+num_and <- str_count(sales$transaction, "&")
+sales$transaction_amt <- ifelse(
+  num_and == 0,
+  sales$transaction_amt,
+  ifelse(
+    num_and == 1,
+    sales$transaction_amt/2,
+    sales$transaction_amt/3)
 )
 
+# Provisional sum of sale prices:
+sum(sales$transaction_amt, na.rm = TRUE)
 
-index <- str_detect(sales$transaction, "\\[a-c\\]")
-sales$transaction_amt[index] <- sales$transaction_amt[index]/3
+# For lots marked with bracket notation, determine the trailing letter and 
+# divide the transaction amount accordingly. Where there is no trailing letter,
+# preserve the same value.
+sales$bracket_letter <- str_match(sales$transaction, "\\[a-([a-z])\\]")[,2]
+sales$bracket_letter[is.na(sales$bracket_letter)] <- "none"
+sales$transaction_amt <- ifelse(sales$bracket_letter == "c", sales$transaction_amt/3, sales$transaction_amt)
+sales$transaction_amt <- ifelse(sales$bracket_letter == "d", sales$transaction_amt/4, sales$transaction_amt)
+sales$transaction_amt <- ifelse(sales$bracket_letter == "e", sales$transaction_amt/5, sales$transaction_amt)
+sales$transaction_amt <- ifelse(sales$bracket_letter == "f", sales$transaction_amt/6, sales$transaction_amt)
+sales$transaction_amt <- ifelse(sales$bracket_letter == "g", sales$transaction_amt/7, sales$transaction_amt)
+sales$transaction_amt <- ifelse(sales$bracket_letter == "h", sales$transaction_amt/8, sales$transaction_amt)
+sales$transaction_amt <- ifelse(sales$bracket_letter == "i", sales$transaction_amt/9, sales$transaction_amt)
+sales$transaction_amt <- ifelse(sales$bracket_letter == "j", sales$transaction_amt/10, sales$transaction_amt)
+sales$transaction_amt <- ifelse(sales$bracket_letter == "k", sales$transaction_amt/11, sales$transaction_amt)
 
-index <- str_detect(sales$transaction, "\\[a-d\\]")
-sales$transaction_amt[index] <- sales$transaction_amt[index]/4
-
-index <- str_detect(sales$transaction, "\\[a-e\\]")
-sales[index, "transaction_amt"] <- sales[index, "transaction_amt"]/5
-
-index <- str_detect(sales$transaction, "\\[a-f\\]")
-sales[index, "transaction_amt"] <- sales[index, "transaction_amt"]/6
-
-index <- str_detect(sales$transaction, "\\[a-g\\]")
-sales[index, "transaction_amt"] <- sales[index, "transaction_amt"]/7
-
-index <- str_detect(sales$transaction, "\\[a-h\\]")
-sales[index, "transaction_amt"] <- sales[index, "transaction_amt"]/8
-
-index <- str_detect(sales$transaction, "\\[a-i\\]")
-sales[index, "transaction_amt"] <- sales[index, "transaction_amt"]/9
-
-index <- str_detect(sales$transaction, "\\[a-j\\]")
-sales[index, "transaction_amt"] <- sales[index, "transaction_amt"]/10
-
-index <- str_detect(sales$transaction, "\\[a-k\\]")
-sales[index, "transaction_amt"] <- sales[index, "transaction_amt"]/11
-
-#### Nationality column ####
-sales$nationality <- str_match(sales$artist.name.1, "\\(([A-Z][a-z]+)?\\)")[,2]
-sales$nationality[sales$nationality=="aitian)"] <- "Haitian"
-sales$nationality[sales$nationality=="Unkown"] <- "Unknown"
-sales$nationality[sales$nationality=="anish)"] <- "Spanish"
-sales$nationality[sales$nationality=="anish),"] <- "Spanish"
-sales$nationality[sales$nationality=="elgian)"] <- "Belgian"
-sales$nationality[sales$nationality=="ench)"] <- "French"
-sales$nationality[sales$nationality=="ench),"] <- "French"
-sales$nationality[sales$nationality=="erman)"] <- "German"
-sales$nationality[sales$nationality=="exican)"] <- "Mexican"
-sales$nationality[sales$nationality=="lemish)"] <- "Flemish"
-sales$nationality[sales$nationality=="nch)"] <- "French"
-sales$nationality[sales$nationality=="nknown)"] <- "Unknown"
-sales$nationality[sales$nationality=="ortuguese)"] <- "Portuguese"
-sales$nationality[sales$nationality=="panish)"] <- "Spanish"
-sales$nationality[sales$nationality=="rench)"] <- "French"
-sales$nationality[sales$nationality=="ritish)"] <- "British"
-sales$nationality[sales$nationality=="rman)"] <- "German"
-sales$nationality[sales$nationality=="talian)"] <- "Italian"
-sales$nationality[sales$nationality=="tch)"] <- "Dutch"
-sales$nationality[sales$nationality=="tch),"] <- "Dutch"
-sales$nationality[sales$nationality=="ustrian)"] <- "Austrian"
-sales$nationality[sales$nationality=="utch)"] <- "Dutch"
-sales$nationality[sales$nationality=="wiss)"] <- "Swiss"
-sales$nationality[is.na(sales$nationality)] <- "Unknown"
-sales$nationality <- as.factor(sales$nationality)
-
-#### Generate period facets ####
-period <- 1770
-while(period < 1840) {
-  start <- period
-  end <- period + 10
-  per_name <- paste(start,"-",end)
-  print(per_name)
-  sales$period[sales$year >= start & sales$year < end] <- per_name
-  period <- end
-}
-sales$period <- as.factor(sales$period)
-
-sales <- filter(
-  sales,
-  period != "NA" &
-    !(grepl("<br>", object.type))
-)
-
-#### Normalize object types ####
-sales$object.type <- as.factor(tolower(sales$object.type))
-
-# Consider only paintings sold in London
-sales <- sales %>% filter(object.type == "painting" & sale.location == "London, England")
+# Provisional sum of sale prices:
+sum(sales$transaction_amt, na.rm = TRUE)
+```
 
 #### Create a price factor variable using the Quintiles of transaction.amt ####
 sales$price.factor <- NA
