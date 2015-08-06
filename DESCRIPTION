@@ -7,3 +7,5 @@ Authors@R: person("Matthew Lincoln", email = "matthew.d.lincoln@gmail.com", role
 Description: More about what it does (maybe more than one line)
 License: What license is it under?
 LazyData: TRUE
+Suggests: knitr
+VignetteBuilder: knitr

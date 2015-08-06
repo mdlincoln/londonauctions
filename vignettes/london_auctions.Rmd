@@ -1,0 +1,206 @@
+---
+title: "Supplementary Material"
+author: "Matthew Lincoln"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Supplementary Material}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+```{r libraries}
+library(dplyr)
+library(readr)
+library(stringr)
+library(lubridate)
+library(gtools)
+```
+
+# Load data table of London paintings sales  ----
+
+```{r load_data}
+# Correct column headers
+correct_cols <- c(
+  "cat_no",
+  "lot_no",
+  "artist_name_1",
+  "artist_name_2",
+  "artist_name_3",
+  "artist_name_4",
+  "artist_name_5",
+  "title",
+  "annotations",
+  "object_type",
+  "object_notes",
+  "inscription",
+  "seller",
+  "transaction",
+  "buyer",
+  "lot_notes",
+  "previous_owner",
+  "previous_sales",
+  "post_owner",
+  "post_sales",
+  "sale_date",
+  "expert",
+  "commissaire",
+  "auction_house",
+  "sale_location",
+  "lugt_no")
+
+# Read in CSV with the given column headers
+base_sales <- read_csv("data-raw/all_england.csv", skip = 1, col_names = correct_cols, col_types = "cccccccccccccccccccccccccc")
+
+# Create a working data frame for all newly-generated columns
+sales <- base_sales
+```
+
+# GENERATE NEW VARIABLES ----
+
+# Parse dates from the sale_date column. ----
+
+# For cases where the sale was over a range of time and a specific lot date is
+# mentioned, we will use the lot date. If no lot date is specified, then we will
+# use the first date of the given range.
+
+```{r}
+sales$date_string <- ifelse(
+  str_detect(sales$sale_date, "This Lot"),
+  paste(str_match(sales$sale_date, "(\\d{4}?)")[,2], str_match(sales$sale_date, "This Lot: (.{6})")[,2], sep = " "),
+  str_match(sales$sale_date, "^(\\d{4} \\w{3}? \\d{1,2})")[,2]
+)
+
+sales$date <- ymd(sales$date_string)
+
+# This leave 1858 dates that are not fully described
+
+# From the date field, we will derive additional integer values for year, month, week of the year, day of the year, day of the month, day of the week.
+
+sales$year <- year(sales$date)
+sales$month <- month(sales$date)
+sales$week <- week(sales$date)
+sales$yday <- yday(sales$date)
+sales$mday <- mday(sales$date)
+sales$wday <- wday(sales$date)
+
+# Differentiate price and transaction type columns ----
+
+# Capture transaction type information recorded in the first segment of the transaction column
+sales$transaction_type <- tolower(trimws(str_match(sales$transaction, "^([A-Za-z ]+)")[,2]))
+
+# Capture numeric information contained in the second half of the transaction column
+sales$transaction_amt <- str_match(sales$transaction, ",\\s*(\\d+[[:punct:]]?\\d*)")[,2]
+# Fix up odd punctuation and convert to numeric
+sales$transaction_amt <- as.numeric(str_replace(sales$transaction_amt, "[[:punct:]]", "."))
+
+# Handle cases where prices cover multiple lots ----
+
+# In some cases, several lots are grouped with the same transaction, so the same price has been assigned to multiple lots. This is marked one of several ways in the documentation
+sales$transaction_amt <- ifelse(str_detect(sales$transaction, "&"), sales$transaction_amt/2, sales$transaction_amt)
+
+for_lots <- sales$transaction[str_detect(sales$transaction, "for lots")]
+
+index <- str_match(sales$transaction, "\\[a-([a-z])\\]")[,2]
+sales$transaction_amt 
+amt <- switch(
+  index,
+  NA = sales$transaction_amt,
+  c = sales$transaction_amt/3,
+  d = sales$transaction_amt/4,
+  e = sales$transaction_amt/5,
+  f = sales$transaction_amt/6,
+  g = sales$transaction_amt/7,
+  h = sales$transaction_amt/8,
+  i = sales$transaction_amt/9,
+  j = sales$transaction_amt/10,
+  k = sales$transaction_amt/11
+)
+
+
+index <- str_detect(sales$transaction, "\\[a-c\\]")
+sales$transaction_amt[index] <- sales$transaction_amt[index]/3
+
+index <- str_detect(sales$transaction, "\\[a-d\\]")
+sales$transaction_amt[index] <- sales$transaction_amt[index]/4
+
+index <- str_detect(sales$transaction, "\\[a-e\\]")
+sales[index, "transaction_amt"] <- sales[index, "transaction_amt"]/5
+
+index <- str_detect(sales$transaction, "\\[a-f\\]")
+sales[index, "transaction_amt"] <- sales[index, "transaction_amt"]/6
+
+index <- str_detect(sales$transaction, "\\[a-g\\]")
+sales[index, "transaction_amt"] <- sales[index, "transaction_amt"]/7
+
+index <- str_detect(sales$transaction, "\\[a-h\\]")
+sales[index, "transaction_amt"] <- sales[index, "transaction_amt"]/8
+
+index <- str_detect(sales$transaction, "\\[a-i\\]")
+sales[index, "transaction_amt"] <- sales[index, "transaction_amt"]/9
+
+index <- str_detect(sales$transaction, "\\[a-j\\]")
+sales[index, "transaction_amt"] <- sales[index, "transaction_amt"]/10
+
+index <- str_detect(sales$transaction, "\\[a-k\\]")
+sales[index, "transaction_amt"] <- sales[index, "transaction_amt"]/11
+
+#### Nationality column ####
+sales$nationality <- str_match(sales$artist.name.1, "\\(([A-Z][a-z]+)?\\)")[,2]
+sales$nationality[sales$nationality=="aitian)"] <- "Haitian"
+sales$nationality[sales$nationality=="Unkown"] <- "Unknown"
+sales$nationality[sales$nationality=="anish)"] <- "Spanish"
+sales$nationality[sales$nationality=="anish),"] <- "Spanish"
+sales$nationality[sales$nationality=="elgian)"] <- "Belgian"
+sales$nationality[sales$nationality=="ench)"] <- "French"
+sales$nationality[sales$nationality=="ench),"] <- "French"
+sales$nationality[sales$nationality=="erman)"] <- "German"
+sales$nationality[sales$nationality=="exican)"] <- "Mexican"
+sales$nationality[sales$nationality=="lemish)"] <- "Flemish"
+sales$nationality[sales$nationality=="nch)"] <- "French"
+sales$nationality[sales$nationality=="nknown)"] <- "Unknown"
+sales$nationality[sales$nationality=="ortuguese)"] <- "Portuguese"
+sales$nationality[sales$nationality=="panish)"] <- "Spanish"
+sales$nationality[sales$nationality=="rench)"] <- "French"
+sales$nationality[sales$nationality=="ritish)"] <- "British"
+sales$nationality[sales$nationality=="rman)"] <- "German"
+sales$nationality[sales$nationality=="talian)"] <- "Italian"
+sales$nationality[sales$nationality=="tch)"] <- "Dutch"
+sales$nationality[sales$nationality=="tch),"] <- "Dutch"
+sales$nationality[sales$nationality=="ustrian)"] <- "Austrian"
+sales$nationality[sales$nationality=="utch)"] <- "Dutch"
+sales$nationality[sales$nationality=="wiss)"] <- "Swiss"
+sales$nationality[is.na(sales$nationality)] <- "Unknown"
+sales$nationality <- as.factor(sales$nationality)
+
+#### Generate period facets ####
+period <- 1770
+while(period < 1840) {
+  start <- period
+  end <- period + 10
+  per_name <- paste(start,"-",end)
+  print(per_name)
+  sales$period[sales$year >= start & sales$year < end] <- per_name
+  period <- end
+}
+sales$period <- as.factor(sales$period)
+
+sales <- filter(
+  sales,
+  period != "NA" &
+    !(grepl("<br>", object.type))
+)
+
+#### Normalize object types ####
+sales$object.type <- as.factor(tolower(sales$object.type))
+
+# Consider only paintings sold in London
+sales <- sales %>% filter(object.type == "painting" & sale.location == "London, England")
+
+#### Create a price factor variable using the Quintiles of transaction.amt ####
+sales$price.factor <- NA
+for (i in unique(sales$year)) {
+  print(i)
+  sales$price.factor[sales$year == i] <- quantcut(sales$transaction.amt[sales$year == i], q=seq(0, 1, by=0.2))
+}
+sales$price.factor <- factor(sales$price.factor, labels=c("1st Quintile", "2nd Quintile", "3rd Quintile", "4th Quintile", "5th Quintile"))
+```
