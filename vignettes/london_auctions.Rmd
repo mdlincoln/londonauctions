@@ -199,7 +199,8 @@ buckets within their year, based on their price relative to other
 ```{r price_factor}
 sales <- sales %>% 
   group_by(year) %>% 
-  mutate(price_factor = ntile(transaction_amt, n = 5))
+  mutate(pice_factor = ntile(transaction_amt, n = 5)) %>% 
+  ungroup()
 ```
 
 ```{r save_data, eval = FALSE}
