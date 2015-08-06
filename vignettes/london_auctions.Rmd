@@ -150,7 +150,8 @@ price has been assigned to multiple lots. This is marked one of several ways in
 the documentation:
 
 - `...for lots 123 & 124` In the case of two lots, the presence of an `&` is signal that the given transaction amount should be divided by 2.
-- `...for lots 123[a-d]` In the case of more than two lots per transaction, most sales are marked with a bracket notation. We can detect the number of lots indicated in this notation by checking the trailing letter (e.g. `a-d` marks 4 lots, `a-i` marks 9) and divide the transaction amount accordingly.
+- `...for lots 123 & 124 & 125` In the case of three lots, the presence 2 `&`s is signal that the given transaction amount should be divided by 3.
+- `...for lots 123[a-d]` In the case of more than two lots per transaction, some sales are marked with a bracket notation. We can detect the number of lots indicated in this notation by checking the trailing letter (e.g. `a-d` marks 4 lots, `a-i` marks 9) and divide the transaction amount accordingly.
 
 ```{r multiple_transactions}
 # Locate transactions with two or three lots as indicated by an & symbol, and
