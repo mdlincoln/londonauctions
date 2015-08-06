@@ -13,7 +13,6 @@ library(dplyr)
 library(readr)
 library(stringr)
 library(lubridate)
-library(gtools)
 ```
 
 The Getty Provenance Index staff has supplied us with a CSV export of their
