@@ -105,12 +105,12 @@ sales$date <- ymd(sales$date_string)
 # year, month, week of the year, day of the year, day of the month, day of the
 # week.
 
-sales$year <- year(sales$date)
-sales$month <- month(sales$date)
-sales$week <- week(sales$date)
-sales$yday <- yday(sales$date)
-sales$mday <- mday(sales$date)
-sales$wday <- wday(sales$date)
+sales$year <- year(sales$date) %>% as.integer()
+sales$month <- month(sales$date) %>% as.integer()
+sales$week <- week(sales$date) %>% as.integer()
+sales$yday <- yday(sales$date) %>% as.integer()
+sales$mday <- mday(sales$date) %>% as.integer()
+sales$wday <- wday(sales$date) %>% as.integer()
 ```
 
 This leaves about 1858 dates that are not fully described, e.g. that have only
