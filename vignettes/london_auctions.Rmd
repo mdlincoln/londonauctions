@@ -1,5 +1,5 @@
 ---
-title: "Supplementary Material"
+title: "Supplementary Material: Data Preparation"
 author: "Matthew Lincoln"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
@@ -16,10 +16,13 @@ library(lubridate)
 library(gtools)
 ```
 
-# Load data table of London paintings sales  ----
+The Getty Provenance Index staff has supplied us with a CSV export of their
+database for all sales of _paintings_ made by auction houses _in London_. We
+will first load this table into the R data processing environment, and make a
+working copy of it.
 
 ```{r load_data}
-# Correct column headers
+# Specify the correct column names
 correct_cols <- c(
   "cat_no",
   "lot_no",
@@ -49,32 +52,43 @@ correct_cols <- c(
   "lugt_no")
 
 # Read in CSV with the given column headers
-base_sales <- read_csv("data-raw/all_england.csv", skip = 1, col_names = correct_cols, col_types = "cccccccccccccccccccccccccc")
+base_sales <- read_csv("../data-raw/all_england.csv", skip = 1, col_names = correct_cols, col_types = "cccccccccccccccccccccccccc")
 
 # Create a working data frame for all newly-generated columns
 sales <- base_sales
 ```
 
-# GENERATE NEW VARIABLES ----
+Having loaded the data, we perform several cleaning operations to extract sturctured information from the semi-structured text entered in many fields of the Getty database.
 
-# Parse dates from the sale_date column. ----
+## Dates
 
-# For cases where the sale was over a range of time and a specific lot date is
-# mentioned, we will use the lot date. If no lot date is specified, then we will
-# use the first date of the given range.
+The original data contained several different variations on dates for each sale.
+While most were in the format `YYYY MMM DD`, many lots are listed with the full
+range of dates their sales took place in, and the exact day of the lot sale
+specified after this. If an exact date was specified for a lot, we assigned that
+date. If only a range was given, we used the first date of the given range.
 
-```{r}
+```{r parse_dates}
+# This function deals with two cases. Where specific dates per lot are
+# mentioned, the function retrieves that date. When no specific lot is
+# mentioned, then the first combination of year, month, and day are taken to be
+# the date.
+
 sales$date_string <- ifelse(
   str_detect(sales$sale_date, "This Lot"),
   paste(str_match(sales$sale_date, "(\\d{4}?)")[,2], str_match(sales$sale_date, "This Lot: (.{6})")[,2], sep = " "),
   str_match(sales$sale_date, "^(\\d{4} \\w{3}? \\d{1,2})")[,2]
 )
 
+# Having constructed date text for each individual lot, we now use R's
+# date-parsing functions to convert these into standard date formats.
 sales$date <- ymd(sales$date_string)
 
-# This leave 1858 dates that are not fully described
+# This leaves 1858 dates that are not fully described
 
-# From the date field, we will derive additional integer values for year, month, week of the year, day of the year, day of the month, day of the week.
+# From this standard date field, we will derive additional integer values for
+# year, month, week of the year, day of the year, day of the month, day of the
+# week.
 
 sales$year <- year(sales$date)
 sales$month <- month(sales$date)
@@ -82,7 +96,9 @@ sales$week <- week(sales$date)
 sales$yday <- yday(sales$date)
 sales$mday <- mday(sales$date)
 sales$wday <- wday(sales$date)
+```
 
+```{r eval=FALSE}
 # Differentiate price and transaction type columns ----
 
 # Capture transaction type information recorded in the first segment of the transaction column
