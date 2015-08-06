@@ -120,7 +120,7 @@ timing of sales at the precision of days, we must exclude these
 partially-documented sales from our analysis.
 
 ```{r exclude_undated}
-sales <- filter(is.na(date))
+sales <- sales %>% filter(!is.na(date))
 
 # Number of records:
 nrow(sales)
@@ -201,3 +201,5 @@ sales <- sales %>%
   group_by(year) %>% 
   mutate(price_factor = ntile(transaction_amt, n = 5))
 ```
+
+
