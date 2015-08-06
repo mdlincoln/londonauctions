@@ -60,6 +60,18 @@ sales <- base_sales
 
 Having loaded the data, we perform several cleaning operations to extract sturctured information from the semi-structured text entered in many fields of the Getty database.
 
+## Object type and Sale location
+
+We will only keep records for sales of _paintings_ that took place in _London, England_
+
+```{r object_types}
+# Consider only paintings sold in London
+sales <- sales %>% filter(object_type == "Painting" & sale_location == "London, England")
+
+# Number of records:
+nrow(sales)
+```
+
 ## Dates
 
 The original data contained several different variations on dates for each sale.
