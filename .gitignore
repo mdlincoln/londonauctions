@@ -3,3 +3,5 @@
 .RData
 *.Rproj
 inst/doc
+vignettes/*.R
+vignettes/*.html
