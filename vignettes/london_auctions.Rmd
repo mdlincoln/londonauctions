@@ -90,16 +90,17 @@ date. If only a range was given, we used the first date of the given range.
 # the date.
 
 sales$date_string <- ifelse(
+  # Check if a specific lot is mentioned
   str_detect(sales$sale_date, "This Lot"),
+  # If so, extract the specific lot date
   paste(str_match(sales$sale_date, "(\\d{4}?)")[,2], str_match(sales$sale_date, "This Lot: (.{6})")[,2], sep = " "),
+  # If not, extract the first complete date mentioned
   str_match(sales$sale_date, "^(\\d{4} \\w{3}? \\d{1,2})")[,2]
 )
 
 # Having constructed date text for each individual lot, we now use R's
 # date-parsing functions to convert these into standard date formats.
 sales$date <- ymd(sales$date_string)
-
-# This leaves 1858 dates that are not fully described
 
 # From this standard date field, we will derive additional integer values for
 # year, month, week of the year, day of the year, day of the month, day of the
