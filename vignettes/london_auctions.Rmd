@@ -51,7 +51,7 @@ correct_cols <- c(
   "lugt_no")
 
 # Read in CSV with the given column headers
-base_sales <- read_csv("../data-raw/all_england.csv", skip = 1, col_names = correct_cols, col_types = "cccccccccccccccccccccccccc")
+base_sales <- read_csv(system.file("extdata", "all_england.csv", package = "londonauctions"), skip = 1, col_names = correct_cols, col_types = "cccccccccccccccccccccccccc")
 
 # Create a working data frame for all newly-generated columns
 sales <- base_sales
