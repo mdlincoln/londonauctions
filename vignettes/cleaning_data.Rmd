@@ -121,7 +121,7 @@ timing of sales at the precision of days, we must exclude these
 partially-documented sales from our analysis.
 
 ```{r exclude_undated}
-sales <- sales %>% filter(!is.na(date))
+sales <- sales %>% filter(between(year, 1780, 1840))
 
 # Number of records:
 nrow(sales)
