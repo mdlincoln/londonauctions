@@ -1,0 +1,204 @@
+---
+title: "Supplementary Material: Data Analysis"
+author: "Matthew Lincoln"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Supplementary Material: Data Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r libraries, echo=FALSE, warnings = FALSE, message = FALSE}
+knitr::opts_chunk$set(warnings = FALSE, message = FALSE, fig.width = 6, fig.height = 4)
+library(londonauctions)
+library(tidyr)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(broom)
+```
+
+```{r per_year}
+ggplot(sales, aes(x = year, fill = !is.na(transaction_amt))) +
+  geom_histogram(binwidth = 1, alpha = 0.7) +
+  theme_bw() +
+  scale_fill_brewer(type = "qual", palette = 6) +
+  theme(legend.position = "bottom") +
+  labs(x = "Year", y = "Painting lots auctioned per year", fill = "has transaction price?")
+```
+
+```{r per_month}
+month_names <- c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+ggplot(sales %>% mutate(month = factor(month, labels = month_names)), aes(x = month, fill = !is.na(transaction_amt))) +
+  theme_bw() +
+  geom_histogram(alpha = 0.7) +
+  scale_fill_brewer(type = "qual", palette = 6) +
+  theme(legend.position = "bottom") +
+  labs(x = "Year", y = "Paintings auctioned per month", fill = "has transaction price?")
+```
+
+```{r top_n}
+#### TOP-N CALCULATIONS
+
+# An alternative approach that finds the top N days of each year by each measure
+# (number of paintings sold, total revenue, and average price) and tests if
+# these top days were closer and closer together over time
+
+n_days <- 7
+
+# Calculate count, total, and average for every day of every year
+peaks <- sales %>%
+  filter(!(is.na(price_factor))) %>%
+  group_by(year, yday, price_factor) %>%
+  summarize(
+    daily_count = n(),
+    daily_sum = sum(transaction_amt),
+    daily_avg = daily_sum/daily_count
+  )
+
+# Keep only the top-N days
+peak_n <- peaks %>%
+  group_by(year, price_factor) %>%
+  filter(row_number(desc(daily_count)) <= n_days) %>%
+  select(year, price_factor, count_day = yday) %>% 
+  ungroup()
+
+peak_sum <- peaks %>%
+  group_by(year, price_factor) %>%
+  filter(row_number(desc(daily_sum)) <= n_days) %>%
+  select(year, price_factor, sum_day = yday) %>% 
+  ungroup()
+
+peak_avg <- peaks %>%
+  group_by(year, price_factor) %>%
+  filter(row_number(desc(daily_avg)) <= n_days) %>%
+  select(year, price_factor, avg_day = yday) %>% 
+  ungroup()
+```
+
+Below is the density measure of when sales 
+
+```{r density, fig.cap = "How concentrated in the year are each of these sales?"}
+sales %>% 
+  filter(price_factor == 5 & year %in% seq(1780, 1830, 10)) %>% 
+  group_by(year) %>% 
+  mutate(spread = 1/(sd(yday)/mean(yday))) %>% 
+  ggplot(aes(x = factor(year), y = yday, fill = factor(spread))) +
+  geom_violin(alpha = 0.7) +
+  scale_fill_brewer(type = "seq", palette = 3) +
+  theme_bw() +
+  theme(legend.position = "none")
+```
+
+```{r boxplot}
+peak_n %>%
+  filter(price_factor == 5, year %in% seq(1780, 1830, by = 10)) %>%
+  mutate(year = factor(year)) %>%
+  ggplot(aes(x = year, y = count_day, fill = year)) +
+  geom_boxplot() +
+  geom_jitter() +
+  theme_bw() +
+  scale_fill_brewer(type = "seq", palette = 6) +
+  ylim(1, 365) +
+  labs(y = paste("Distribution of the top", n_days, "days of the year with most sales")) +
+  theme(legend.position = "none")
+```
+
+
+```{r changing_cv}
+# Calculate the standard deviation of the top-N days for each year and price
+# factor - i.e. how spread apart through the year are they? Combine into one
+# table for easy plotting and analysis
+all_peaks <- peak_n %>% group_by(year, price_factor) %>% summarize(count_cv = sd(count_day)/mean(count_day)) %>%
+  left_join(peak_sum %>% group_by(year, price_factor) %>% summarize(sum_cv = sd(sum_day)/mean(sum_day)), by = c("year", "price_factor")) %>%
+  left_join(peak_avg %>% group_by(year, price_factor) %>% summarize(avg_cv = sd(avg_day)/mean(avg_day)), by = c("year", "price_factor")) %>%
+  gather(type, cv, count_cv, sum_cv, avg_cv)
+
+# Run linear regressions to find corellation between the year and the spread of
+# top auction days
+models <- all_peaks %>%
+  group_by(price_factor, type) %>%
+  do(lms = lm(year ~ cv, data = .)) %>%
+  tidy(lms) %>%
+  filter(term == "cv") %>% 
+  ungroup()
+
+# Join the significance calculations back onto the top-N-days data, so that we
+# can use ggplot to color each facet based on the value. Plot the change in
+# distribution of these top days between 1780-1840, highlighting those with
+# significant correlations
+all_peaks %>%
+  inner_join(models, by = c("price_factor", "type")) %>%
+  mutate(
+    type = factor(
+      type,
+      levels = c("avg_cv", "count_cv", "sum_cv"),
+      labels = c( "Highest average price", "Highest number of sales", "Higest total revenue"))) %>%
+  ggplot(aes(x = year, y = cv, color = estimate)) +
+  geom_point(size = 3, alpha = 0.5) +
+  geom_smooth(method = "lm") +
+  facet_grid(type ~ price_factor) +
+  theme_bw() +
+  scale_color_gradient(low = "red", high = "black") +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  ) +
+  labs(
+    x = "Year",
+    y = paste0("Coefficient of variation of the top ", n_days, " days per year"),
+    color = "Decrease in the CV of top sales days per year"
+  )
+```
+
+```{r ra}
+
+# Plot top N days against RA exhibition dates
+
+# Join a table with the top N days together
+top_Nth <- peak_n %>%
+  left_join(peak_sum) %>%
+  left_join(peak_avg) %>%
+  gather(type, yday, count_day, sum_day, avg_day) %>%
+  distinct() %>%
+  # Join the Royal Academy exhibition dates, and calculate which ones take place
+  # during the exhibition
+  inner_join(ra_dates %>% select(year = exhib_year, exhib_start_day, exhib_end_day)) %>%
+  mutate(during_exhib = yday >= exhib_start_day & yday <= exhib_end_day) %>%
+  # Keep only selected quintiles, and re-label the type factor
+  filter(price_factor == 5) %>%
+  mutate(
+    type = factor(
+      type,
+      levels = c("avg_day", "count_day", "sum_day"),
+      labels = c( "Highest average price", "Highest number of sales", "Higest total revenue")))
+
+# Calculate the ratio of top N days that take place during the RA exhibition,
+# and join it to the table for plotting
+num_during <- top_Nth %>%
+  group_by(year, price_factor, type) %>%
+  summarize(n = mean(during_exhib))
+top_Nth <- top_Nth %>%
+  inner_join(num_during)
+
+ggplot(top_Nth, aes(x = year, y = yday)) +
+  geom_point(size = 2, alpha = 0.5) +
+  geom_ribbon(aes(ymin = exhib_start_day, ymax = exhib_end_day, na.rm = TRUE), alpha = 0.5) +
+  geom_rug(aes(color = n), size = 2, sides = "b") +
+  scale_color_gradient(low = "white", high = "red") +
+  facet_wrap(~ type, nrow = 1) +
+  theme_bw() +
+  theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  ) +
+  labs(
+    x = "Year",
+    y = "Day of the year",
+    color = "Ratio of top auction days
+    during RA exhibition",
+    alpha = "Royal Exhibition open"
+  ) +
+  ylim(1, 365)
+```
