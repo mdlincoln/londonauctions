@@ -9,5 +9,13 @@ Authors@R: c(
 Description: More about what it does (maybe more than one line)
 License: GPL-3
 LazyData: TRUE
-Suggests: knitr
+Suggests:
+  knitr,
+  readr,
+  dplyr,
+  stringr,
+  lubridate,
+  tidyr,
+  broom,
+  ggplot2
 VignetteBuilder: knitr
