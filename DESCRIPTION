@@ -7,7 +7,7 @@ Authors@R: c(
   person("Matthew Lincoln", email = "matthew.d.lincoln@gmail.com", role = c("aut", "cre")),
   person("Abram Fox", email = "abramfox@gmail.com", role = "ctb"))
 Description: More about what it does (maybe more than one line)
-License: What license is it under?
+License: GPL-3
 LazyData: TRUE
 Suggests: knitr
 VignetteBuilder: knitr
