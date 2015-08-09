@@ -30,8 +30,8 @@
 #' A table of the Royal Academy exhibiton start and end days, as compiled by RA archivist Mark Pomeroy
 #' @format A data frame with 83 observations of 4 variables:
 #' \describe{
-#'  \item{exhibition_start}{POSIXct. The date of the exhibition start}
-#'  \item{exhibition_end}{POSIXct. The date of the exhibition end}
+#'  \item{exhib_start}{POSIXct. The date of the exhibition start}
+#'  \item{exhib_end}{POSIXct. The date of the exhibition end}
 #'  \item{exhib_start_day}{Integer. Day of the year the exbhition began.}
 #'  \item{exhib_end_day}{Integer. Day of the year the exhbition ended.}
 #'  \item{exhib_year}{Integer. Year of the exhibition.}
