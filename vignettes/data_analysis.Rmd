@@ -42,26 +42,19 @@ ggplot(sales %>% mutate(month = factor(month, labels = month_names)), aes(x = mo
 ```
 
 We are interested in measuring how temporally-concentrated sales were in a given
-year. To visualize what this spread might look like, take the following violin
-plot, where the density of sales over the course of 6 different years are
-plotted along the y-axis, moving from `yday` 1 (January 1st) to `yday` 365
-(December 31st), and the width of each shape marks the relative density of sales
-at that point in the year. Note that for several such as 1780-1800, the sales
-are relatively spread out up to around day 200 of the year, while for 1810-1830,
-the years "bulge" with a concentration of sales. The relative spread of sales
-for each year has also been marked by color.
+year. Simply plotting out the number of sales on each day for a number of years
+within our period of study suggests that auctioneers in later years increasingly
+concentrated their sales within a shorter period.
 
-```{r density, fig.cap = "How concentrated in the year are each of these sales?"}
+```{r example_years}
 sales %>% 
-  filter(price_factor == 5 & year %in% seq(1780, 1830, 10)) %>% 
-  group_by(year) %>% 
-  mutate(spread = sd(yday)/mean(yday)) %>% 
-  ggplot(aes(x = factor(year), y = yday, fill = spread)) +
-  geom_violin(alpha = 0.7) +
-  ylim(1, 365) +
+  filter(year %in% seq(1800, 1830, 10), price_factor == 5) %>% 
+  count(year, yday) %>% 
+  ggplot(aes(x = yday, y = n)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~ year, ncol = 1) +
   theme_bw() +
-  theme(legend.position = "bottom") +
-  labs(y = "Day of the year", x = NULL)
+  labs(x = "Day of the year", y = "Number of sales")
 ```
 
 To focus our analysis on the spread of the most successful sales for each year,
@@ -69,14 +62,14 @@ we look for the top $n$ sale days for each year and calculate their _coefficient
 of variation_. For example, the top sale days (counted by number of lots sold)
 for 1790 would look like so:
 
-```{r top_1790}
+```{r example_top}
 top_examples <- sales %>% 
   filter(year %in% seq(1800, 1830, 10), price_factor == 5) %>% 
   count(year, yday) %>% 
   mutate(
     rank = row_number(desc(n)),
     is_top = rank <= 7)
-
+  
 ggplot(top_examples, aes(x = yday, y = n, fill = is_top)) +
   geom_bar(stat = "identity") +
   scale_fill_manual(values = c("black", "red")) +
@@ -86,12 +79,12 @@ ggplot(top_examples, aes(x = yday, y = n, fill = is_top)) +
   labs(x = "Day of the year", y = "Number of sales")
 ```
 
-The seven top sales days for each year are marked in red. From these example
-years, we see that the top-most days become increasingly concentratee cgetween
-1790 and 1830. The coefficient of variation (the standard deviation of each day
-by the mean of all days) confirms this visual impression. As the top sales
-concentrate closer and closer together, the CV for each year decreases
-accordingly.
+The seven top sales days for each year are marked in red. From these example 
+years, we see that the top-most days become increasingly concentratee cgetween 
+1790 and 1830. The coefficient of variation (the standard deviation of each day 
+by the mean of all days) confirms this visual impression. Years with more 
+concentrated top sales days have a lower coefficient of variation; their top 
+sales days are simply closer to eachother in the calendar year.
 
 ```{r, results='asis'}
 cv_examples <- top_examples %>% 
