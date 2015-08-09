@@ -9,8 +9,8 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r libraries, echo=FALSE, warnings = FALSE, message = FALSE}
-knitr::opts_chunk$set(warnings = FALSE, message = FALSE, fig.width = 6, fig.height = 4)
+```{r libraries, echo=FALSE, warnings = FALSE, message = FALSE, tidy = TRUE}
+knitr::opts_chunk$set(warnings = FALSE, message = FALSE, fig.width = 7, fig.height = 5)
 library(londonauctions)
 library(tidyr)
 library(dplyr)
