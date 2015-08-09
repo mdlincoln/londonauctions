@@ -41,17 +41,78 @@ ggplot(sales %>% mutate(month = factor(month, labels = month_names)), aes(x = mo
   labs(x = "Year", y = "Paintings auctioned per month", fill = "has transaction price?")
 ```
 
+We are interested in measuring how temporally-concentrated sales were in a given
+year. To visualize what this spread might look like, take the following violin
+plot, where the density of sales over the course of 6 different years are
+plotted along the y-axis, moving from `yday` 1 (January 1st) to `yday` 365
+(December 31st), and the width of each shape marks the relative density of sales
+at that point in the year. Note that for several such as 1780-1800, the sales
+are relatively spread out up to around day 200 of the year, while for 1810-1830,
+the years "bulge" with a concentration of sales. The relative spread of sales
+for each year has also been marked by color.
+
+```{r density, fig.cap = "How concentrated in the year are each of these sales?"}
+sales %>% 
+  filter(price_factor == 5 & year %in% seq(1780, 1830, 10)) %>% 
+  group_by(year) %>% 
+  mutate(spread = sd(yday)/mean(yday)) %>% 
+  ggplot(aes(x = factor(year), y = yday, fill = spread)) +
+  geom_violin(alpha = 0.7) +
+  ylim(1, 365) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  labs(y = "Day of the year", x = NULL)
+```
+
+To focus our analysis on the spread of the most successful sales for each year,
+we look for the top $n$ sale days for each year and calculate their _coefficient
+of variation_. For example, the top sale days (counted by number of lots sold)
+for 1790 would look like so:
+
+```{r top_1790}
+top_examples <- sales %>% 
+  filter(year %in% seq(1800, 1830, 10), price_factor == 5) %>% 
+  count(year, yday) %>% 
+  mutate(
+    rank = row_number(desc(n)),
+    is_top = rank <= 7)
+
+ggplot(top_examples, aes(x = yday, y = n, fill = is_top)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("black", "red")) +
+  facet_wrap(~ year, ncol = 1) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  labs(x = "Day of the year", y = "Number of sales")
+```
+
+The seven top sales days for each year are marked in red. From these example
+years, we see that the top-most days become increasingly concentratee cgetween
+1790 and 1830. The coefficient of variation (the standard deviation of each day
+by the mean of all days) confirms this visual impression. As the top sales
+concentrate closer and closer together, the CV for each year decreases
+accordingly.
+
+```{r, results='asis'}
+cv_examples <- top_examples %>% 
+  filter(is_top == TRUE) %>% 
+  group_by(year) %>% 
+  summarize(cv = sd(yday)/mean(yday))
+
+knitr::kable(cv_examples, digits = 3)
+```
+
+
+
 ```{r top_n}
-#### TOP-N CALCULATIONS
-
-# An alternative approach that finds the top N days of each year by each measure
-# (number of paintings sold, total revenue, and average price) and tests if
-# these top days were closer and closer together over time
-
+# What number of top days will be considered in the calculation of seasonal
+# spread?
 n_days <- 7
 
-# Calculate count, total, and average for every day of every year
+# Calculate count, total, and average for every day of every year, grouped by
+# price_factor
 peaks <- sales %>%
+  # Only consider records that have price information
   filter(!(is.na(price_factor))) %>%
   group_by(year, yday, price_factor) %>%
   summarize(
@@ -60,7 +121,7 @@ peaks <- sales %>%
     daily_avg = daily_sum/daily_count
   )
 
-# Keep only the top-N days
+# Find the top-N days in terms of daily_count, daily_sum, and daily_avg
 peak_n <- peaks %>%
   group_by(year, price_factor) %>%
   filter(row_number(desc(daily_count)) <= n_days) %>%
@@ -80,37 +141,10 @@ peak_avg <- peaks %>%
   ungroup()
 ```
 
-Below is the density measure of when sales 
-
-```{r density, fig.cap = "How concentrated in the year are each of these sales?"}
-sales %>% 
-  filter(price_factor == 5 & year %in% seq(1780, 1830, 10)) %>% 
-  group_by(year) %>% 
-  mutate(spread = 1/(sd(yday)/mean(yday))) %>% 
-  ggplot(aes(x = factor(year), y = yday, fill = factor(spread))) +
-  geom_violin(alpha = 0.7) +
-  scale_fill_brewer(type = "seq", palette = 3) +
-  theme_bw() +
-  theme(legend.position = "none")
-```
-
-```{r boxplot}
-peak_n %>%
-  filter(price_factor == 5, year %in% seq(1780, 1830, by = 10)) %>%
-  mutate(year = factor(year)) %>%
-  ggplot(aes(x = year, y = count_day, fill = year)) +
-  geom_boxplot() +
-  geom_jitter() +
-  theme_bw() +
-  scale_fill_brewer(type = "seq", palette = 6) +
-  ylim(1, 365) +
-  labs(y = paste("Distribution of the top", n_days, "days of the year with most sales")) +
-  theme(legend.position = "none")
-```
 
 
 ```{r changing_cv}
-# Calculate the standard deviation of the top-N days for each year and price
+# Calculate the coefficient of variation of the top-N days for each year and price
 # factor - i.e. how spread apart through the year are they? Combine into one
 # table for easy plotting and analysis
 all_peaks <- peak_n %>% group_by(year, price_factor) %>% summarize(count_cv = sd(count_day)/mean(count_day)) %>%
@@ -125,6 +159,7 @@ models <- all_peaks %>%
   do(lms = lm(year ~ cv, data = .)) %>%
   tidy(lms) %>%
   filter(term == "cv") %>% 
+  mutate(sig = p.value < 0.05) %>% 
   ungroup()
 
 # Join the significance calculations back onto the top-N-days data, so that we
