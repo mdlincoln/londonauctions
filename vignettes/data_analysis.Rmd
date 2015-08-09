@@ -18,6 +18,8 @@ library(ggplot2)
 library(broom)
 ```
 
+Code for generating Figure 1.
+
 ```{r per_year}
 ggplot(sales, aes(x = year, fill = !is.na(transaction_amt))) +
   geom_histogram(binwidth = 1, alpha = 0.7) +
@@ -26,6 +28,8 @@ ggplot(sales, aes(x = year, fill = !is.na(transaction_amt))) +
   theme(legend.position = "bottom") +
   labs(x = "Year", y = "Painting lots auctioned per year", fill = "has transaction price?")
 ```
+
+Code for generating Figure 2.
 
 ```{r per_month}
 month_names <- c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
