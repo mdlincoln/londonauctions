@@ -3,7 +3,9 @@ Type: Package
 Title: Data, analysis, and figures for Lincoln and Fox YEAR
 Version: 0.1
 Date: 2015-08-05
-Authors@R: person("Matthew Lincoln", email = "matthew.d.lincoln@gmail.com", role = c("aut", "cre"))
+Authors@R: c(
+  person("Matthew Lincoln", email = "matthew.d.lincoln@gmail.com", role = c("aut", "cre")),
+  person("Abram Fox", email = "abramfox@gmail.com", role = "ctb"))
 Description: More about what it does (maybe more than one line)
 License: What license is it under?
 LazyData: TRUE
