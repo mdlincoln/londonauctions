@@ -238,13 +238,13 @@ regardless of measurement method. Similarly, we find that the spread of top days
 
 # Join a table with the top N days together
 ra_overlap <- peak_n %>%
-  left_join(peak_sum) %>%
-  left_join(peak_avg) %>%
+  left_join(peak_sum, by = c("year", "price_factor")) %>%
+  left_join(peak_avg, by = c("year", "price_factor")) %>%
   gather(type, yday, count_day, sum_day, avg_day) %>%
   distinct() %>%
   # Join the Royal Academy exhibition dates, and calculate which ones take place
   # during the exhibition
-  inner_join(ra_dates %>% select(year = exhib_year, exhib_start_day, exhib_end_day)) %>%
+  inner_join(ra_dates %>% select(year = exhib_year, exhib_start_day, exhib_end_day), by = "year") %>%
   mutate(during_exhib = yday >= exhib_start_day & yday <= exhib_end_day) %>%
   # Keep only selected quintiles, and re-label the type factor
   filter(price_factor == 5) %>%
@@ -288,13 +288,13 @@ afoot.
 
 ```{r}
 parliament_overlap <- peak_n %>%
-  left_join(peak_sum) %>%
-  left_join(peak_avg) %>%
+  left_join(peak_sum, by = c("year", "price_factor")) %>%
+  left_join(peak_avg, by = c("year", "price_factor")) %>%
   gather(type, yday, count_day, sum_day, avg_day) %>%
   distinct() %>%
   # Join the parliament dates, and calculate which ones take place
   # during the exhibition
-  inner_join(parliament_dates %>% select(year = start_year, start_yday, end_yday)) %>%
+  inner_join(parliament_dates %>% select(year = par_start_year, par_start_day, par_end_day), by = "year") %>%
   # Keep only selected quintiles, and re-label the type factor
   filter(price_factor == 5) %>%
   mutate(
@@ -305,8 +305,8 @@ parliament_overlap <- peak_n %>%
 
 ggplot(parliament_overlap, aes(x = year, y = yday)) +
   geom_point(size = 2, alpha = 0.5) +
-  geom_point(aes(y = end_yday, na.rm = TRUE), alpha = 0.5, color = "red") +
-  geom_point(aes(y = start_yday, na.rm = TRUE), alpha = 0.5, color = "blue") +
+  geom_point(aes(y = par_end_day, na.rm = TRUE), alpha = 0.5, color = "red") +
+  geom_point(aes(y = par_start_day, na.rm = TRUE), alpha = 0.5, color = "blue") +
   facet_wrap(~ type, nrow = 1) +
   theme_bw() +
   theme(
