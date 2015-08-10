@@ -233,3 +233,43 @@ ggplot(top_Nth, aes(x = year, y = yday)) +
   ) +
   ylim(1, 365)
 ```
+
+We can also plot the parliament session dates for the same period. Around
+1780-1800, the top sales days were generally spread from the start of parliament
+until the end; however these became increasingly clustered towards the close of
+parliament. Unsurprisingly, the Parliament meeting dates set the outer bounds of
+the auction season. However within those bounds, more interesting activity was
+afoot.
+
+```{r}
+parliament_overlap <- peak_n %>%
+  left_join(peak_sum) %>%
+  left_join(peak_avg) %>%
+  gather(type, yday, count_day, sum_day, avg_day) %>%
+  distinct() %>%
+  # Join the parliament dates, and calculate which ones take place
+  # during the exhibition
+  inner_join(parliament_dates %>% select(year = start_year, start_yday, end_yday)) %>%
+  # Keep only selected quintiles, and re-label the type factor
+  filter(price_factor == 5) %>%
+  mutate(
+    type = factor(
+      type,
+      levels = c("avg_day", "count_day", "sum_day"),
+      labels = c( "Highest average price", "Highest number of sales", "Higest total revenue")))
+
+ggplot(parliament_overlap, aes(x = year, y = yday)) +
+  geom_point(size = 2, alpha = 0.5) +
+  geom_point(aes(y = end_yday, na.rm = TRUE), alpha = 0.5, color = "red") +
+  geom_point(aes(y = start_yday, na.rm = TRUE), alpha = 0.5, color = "blue") +
+  facet_wrap(~ type, nrow = 1) +
+  theme_bw() +
+  theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  ) +
+  labs(
+    x = "Year",
+    y = "Day of the year"
+  ) +
+  ylim(1, 365)
