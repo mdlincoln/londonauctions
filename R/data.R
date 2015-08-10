@@ -37,3 +37,17 @@
 #'  \item{exhib_year}{Integer. Year of the exhibition.}
 #' }
 "ra_dates"
+
+#' Parliament Dates
+#'
+#' A table of the starting and ending dates for Parliament, 1715-1831.
+#' @format A data frame with 128 observations of 46 variables:
+#' \describe{
+#'  \item{par_start}{POSIXct. The date of the parliament start}
+#'  \item{par_end}{POSIXct. The date of the parliament end}
+#'  \item{par_start_year}{Integer. Year parliament began.}
+#'  \item{par_end_year}{Integer. Year parliament ended.}
+#'  \item{par_start_day}{Integer. Day of the year the parliament began.}
+#'  \item{par_end_day}{Integer. Day of the year the parliament ended.}
+#' }
+"parliament_dates"

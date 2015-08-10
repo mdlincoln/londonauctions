@@ -232,3 +232,17 @@ ra_dates <- raw_ra %>%
   ) %>%
   select(contains("exhib"))
 ```
+
+# Parliament dates
+
+```{r parse_parliament_data}
+parliament_dates <- read_csv(system.file("extdata", "parliament_dates.csv", package = "londonauctions")) %>% 
+  select(
+    par_start = start_date,
+    par_end = end_date,
+    par_start_year = start_year,
+    par_end_year = end_year,
+    par_start_day = start_yday,
+    par_end_day = end_yday
+  )
+```
