@@ -32,8 +32,8 @@
 #' \describe{
 #'  \item{exhib_start}{POSIXct. The date of the exhibition start}
 #'  \item{exhib_end}{POSIXct. The date of the exhibition end}
-#'  \item{exhib_start_day}{Integer. Day of the year the exbhition began.}
-#'  \item{exhib_end_day}{Integer. Day of the year the exhbition ended.}
+#'  \item{exhib_start_day}{Integer. Day of the year the exhibition began.}
+#'  \item{exhib_end_day}{Integer. Day of the year the exhibition ended.}
 #'  \item{exhib_year}{Integer. Year of the exhibition.}
 #' }
 "ra_dates"
