@@ -43,7 +43,7 @@ base_sales <- one_col %>%
   # Now spread() the table into one column per variable, and one row per observation
   spread(variable, value) %>% 
   # And rename column variables to be more standardized
-  select(objnum, sale_no = `BBF Number`, lot_no = `Lot Number`, auction_house = `Auct.House Auth.`, is_edited = `Edit Status`, sale_date = `Lot Sale Date`, sale_begin = `Sale Begin Date`, sale_end = `Sale End Date`, transaction_type = Transaction, transaction = Price)
+  select(cat_no = `BBF Number`, lot_no = `Lot Number`, auction_house = `Auct.House Auth.`, is_edited = `Edit Status`, sale_date = `Lot Sale Date`, sale_begin = `Sale Begin Date`, sale_end = `Sale End Date`, transaction_type = Transaction, transaction = Price)
 
 
 # Create a working data frame for all newly-generated columns
@@ -202,7 +202,7 @@ sales <- sales %>%
 ```{r save_data}
 # Select pertinent columns of data and save for analyses
 sales <- sales %>% 
-  select(objnum, sale_no, lot_no, auction_house, date, transaction_type, type_is_uncertain, transaction_amt, year, month, week, yday, mday, wday, price_factor)
+  select(cat_no, lot_no, auction_house, date, transaction_type, type_is_uncertain, transaction_amt, year, month, week, yday, mday, wday, price_factor)
 ```
 
 # Royal Academy dates
