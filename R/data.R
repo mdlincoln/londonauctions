@@ -57,7 +57,7 @@
 #' A table describing the Getty's progress in digitizing their sales catalogs.
 #' @format A data frame with 8393 ovservations of 4 variables:
 #' \describe{
-#'  \item{sale_begin}{POSICxt. The start date for the sale described by the catalog.}
+#'  \item{sale_begin}{POSIXct. The start date for the sale described by the catalog.}
 #'  \item{sale_no}{Character. The sale catalog id number.}
 #'  \item{is_input}{Logical. Has the catalog been input into the database yet?}
 #'  \item{year}{Integer. Year derived from \code{sale_begin}}
