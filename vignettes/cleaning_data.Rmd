@@ -78,11 +78,6 @@ sales$mday <- mday(sales$date) %>% as.integer()
 sales$wday <- wday(sales$date) %>% as.integer()
 ```
 
-This leaves about 1858 dates that are not fully described, e.g. that have only
-the month of the sale, not the specific date. Because we are interested in the
-timing of sales at the precision of days, we must exclude these
-partially-documented sales from our analysis.
-
 ```{r exclude_undated}
 sales <- sales %>% filter(between(year, 1780, 1840))
 
