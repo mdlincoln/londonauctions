@@ -109,6 +109,37 @@ sales$type_is_uncertain <- str_detect(sales$transaction_type, "\\?")
 sales$transaction_type <- str_replace(sales$transaction_type, "\\?|\\[\\?\\]", "") %>% str_trim()
 ```
 
+## Transaction amounts
+
+Amounts are generally listed in pounds sterling. There are very few sales with uncertain prices. We will exclude these. There are
+also comparatively few lots with more than one price attached. We will also
+exclude these.
+
+```{r transaction_amounts}
+# Create a separate column denoting uncertainty
+sales$amt_is_uncertain <- str_detect(sales$transaction, "\\?")
+# Create a separate column denoting multiple prices
+sales$has_double_price <- str_detect(sales$transaction, "\\[or\\]")
+
+# How many sales have uncertain amounts?
+nrow(sales %>% filter(amt_is_uncertain == TRUE))
+
+# How many sales have more than one price?
+nrow(sales %>% filter(has_double_price == TRUE))
+
+sales <- sales %>% filter(amt_is_uncertain == FALSE & has_double_price == FALSE)
+```
+
+
+```{r numeric_price}
+# Detect the price number within the transaction amount field
+sales$transaction_amt <- sales$transaction %>% 
+  # Replace some puncutation where the decimal place is marked by a comma instead of a period
+  str_replace("[,]", ".") %>% 
+  # Extract numbers that may or may not have decimal places
+  str_extract("\\d+(?:\\.\\d+)?") %>% 
+  # Convert strings to numeric information
+  as.numeric()
 
 # Provisional sum of sale prices:
 sum(sales$transaction_amt, na.rm = TRUE)
