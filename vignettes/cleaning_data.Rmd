@@ -48,7 +48,7 @@ base_sales <- one_col %>%
 # Create a working data frame for all newly-generated columns
 sales <- base_sales
 
-# Number of records:
+# Original number of records:
 nrow(sales)
 ```
 
