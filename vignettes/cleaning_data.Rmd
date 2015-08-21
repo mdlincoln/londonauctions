@@ -13,6 +13,7 @@ library(dplyr)
 library(readr)
 library(stringr)
 library(lubridate)
+library(tidyr)
 ```
 
 # Paintings sales
