@@ -90,21 +90,25 @@ sales <- sales %>% filter(between(year, 1780, 1840))
 nrow(sales)
 ```
   
-## Transaction types and amounts
+## Transaction type
 
-Transaction information involves both categorical descriptions of transaction
-types (sold, bought in, etc.) and, in some cases, a recorded transaction amount.
-The Getty database concatenates this information into a single text field, so we
-will have to extract both the categorical and numeric information from it.
+The Getty data have a transaction type field that describes if a lot was sold,
+bought in, passed, withdrawn, unknown, or some uncertain combination of any of
+those. A few fields are also marked with `?` or `[?]` denoting further
+uncertainty. We break these markers out into a second column.
 
-```{r transaction_extraction}
-# Capture transaction type information recorded in the first segment of the transaction column
-sales$transaction_type <- tolower(trimws(str_match(sales$transaction, "^([A-Za-z ]+)")[,2]))
+```{r transaction_types}
+# Clean up transaction_type column
 
-# Capture numeric information contained in the second half of the transaction column
-sales$transaction_amt <- str_match(sales$transaction, ",\\s*(\\d+[[:punct:]]?\\d*)")[,2]
-# Fix up odd punctuation and convert to numeric
-sales$transaction_amt <- as.numeric(str_replace(sales$transaction_amt, "[[:punct:]]", "."))
+# Everything to lowercase
+sales$transaction_type <- tolower(sales$transaction_type)
+
+# Create a separate column denoting uncertainty
+sales$type_is_uncertain <- str_detect(sales$transaction_type, "\\?")
+# Remove ? and [?] from the transaction_type field
+sales$transaction_type <- str_replace(sales$transaction_type, "\\?|\\[\\?\\]", "") %>% str_trim()
+```
+
 
 # Provisional sum of sale prices:
 sum(sales$transaction_amt, na.rm = TRUE)
