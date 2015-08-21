@@ -239,3 +239,12 @@ parliament_dates <- read_csv(system.file("extdata", "parliament_dates.csv", pack
     par_end_day = end_yday
   )
 ```
+
+# Getty Catalogue Input
+
+They Getty has not yet input all of its catalogues.
+
+```{r getty_input}
+getty_catalogs <- read_csv(system.file("extdata", "catalog_completion.csv", package = "londonauctions")) %>% 
+  mutate(is_input = ifelse(is_input == "yes", TRUE, FALSE))
+```
