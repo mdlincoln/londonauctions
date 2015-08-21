@@ -27,7 +27,7 @@ working copy of it.
 one_col <- data_frame(text = read_lines(system.file("extdata", "britishsales.txt", package = "londonauctions")))
 
 # These are the variables we want to preserve for each record
-req_vars <- c("--RECORD NUMBER--", "Edit Status", "Lot Sale Date", "Sale Begin Date", "Sale End Date", "Transaction", "Price")
+req_vars <- c("--RECORD NUMBER--", "BBF Number", "Lot Number", "Edit Status", "Lot Sale Date", "Sale Begin Date", "Sale End Date", "Transaction", "Price", "Auct.House Auth.")
 
 base_sales <- one_col %>%
   # Split the single column of text into two cols: variable and value
@@ -42,7 +42,7 @@ base_sales <- one_col %>%
   # Now spread() the table into one column per variable, and one row per observation
   spread(variable, value) %>% 
   # And rename column variables to be more standardized
-  select(objnum, is_edited = `Edit Status`, sale_date = `Lot Sale Date`, sale_begin = `Sale Begin Date`, sale_end = `Sale End Date`, transaction_type = Transaction, transaction_amt = Price)
+  select(objnum, sale_no = `BBF Number`, lot_no = `Lot Number`, auction_house = `Auct.House Auth.`, is_edited = `Edit Status`, sale_date = `Lot Sale Date`, sale_begin = `Sale Begin Date`, sale_end = `Sale End Date`, transaction_type = Transaction, transaction = Price)
 
 
 # Create a working data frame for all newly-generated columns
