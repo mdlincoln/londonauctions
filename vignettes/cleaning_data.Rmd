@@ -42,7 +42,7 @@ base_sales <- one_col %>%
   # Now spread() the table into one column per variable, and one row per observation
   spread(variable, value) %>% 
   # And rename column variables to be more standardized
-  select(objnum, is_edited = `Edit Status`, sale_date = `Lot Sale Date`, sale_begin = `Sale Begin Date`, sale_end = `Sale End Date`, transaction_type = Transaction, amt = Price)
+  select(objnum, is_edited = `Edit Status`, sale_date = `Lot Sale Date`, sale_begin = `Sale Begin Date`, sale_end = `Sale End Date`, transaction_type = Transaction, transaction_amt = Price)
 
 
 # Create a working data frame for all newly-generated columns
