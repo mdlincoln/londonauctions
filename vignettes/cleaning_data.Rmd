@@ -203,10 +203,10 @@ sales <- sales %>%
   ungroup()
 ```
 
-```{r save_data, eval = FALSE}
+```{r save_data}
 # Select pertinent columns of data and save for analyses
 sales <- sales %>% 
-  select(cat_no, lot_no, auction_house, date, transaction_type, transaction_amt, year, month, week, yday, mday, wday, price_factor)
+  select(objnum, sale_no, lot_no, auction_house, date, transaction_type, type_is_uncertain, transaction_amt, year, month, week, yday, mday, wday, price_factor)
 ```
 
 # Royal Academy dates
