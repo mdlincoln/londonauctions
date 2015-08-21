@@ -63,23 +63,8 @@ specified after this. If an exact date was specified for a lot, we assigned that
 date. If only a range was given, we used the first date of the given range.
 
 ```{r parse_dates}
-# This function deals with two cases. Where specific dates per lot are
-# mentioned, the function retrieves that date. When no specific lot is
-# mentioned, then the first combination of year, month, and day are taken to be
-# the date.
-
-sales$date_string <- ifelse(
-  # Check if a specific lot is mentioned
-  str_detect(sales$sale_date, "This Lot"),
-  # If so, extract the specific lot date
-  paste(str_match(sales$sale_date, "(\\d{4}?)")[,2], str_match(sales$sale_date, "This Lot: (.{6})")[,2], sep = " "),
-  # If not, extract the first complete date mentioned
-  str_match(sales$sale_date, "^(\\d{4} \\w{3}? \\d{1,2})")[,2]
-)
-
-# Having constructed date text for each individual lot, we now use R's
-# date-parsing functions to convert these into standard date formats.
-sales$date <- ymd(sales$date_string)
+# Use R's date-parsing functions to convert these into standard date formats.
+sales$date <- ymd(sales$sale_date)
 
 # From this standard date field, we will derive additional integer values for
 # year, month, week of the year, day of the year, day of the month, day of the
