@@ -17,43 +17,33 @@ library(lubridate)
 
 # Paintings sales
 
-The Getty Provenance Index staff has supplied us with a CSV export of their
+The Getty Provenance Index staff has supplied us with a text export of their
 database for all sales of _paintings_ made by auction houses _in London_. We
 will first load this table into the R data processing environment, and make a
 working copy of it.
 
 ```{r load_data}
-# Specify the correct column names
-correct_cols <- c(
-  "cat_no",
-  "lot_no",
-  "artist_name_1",
-  "artist_name_2",
-  "artist_name_3",
-  "artist_name_4",
-  "artist_name_5",
-  "title",
-  "annotations",
-  "object_type",
-  "object_notes",
-  "inscription",
-  "seller",
-  "transaction",
-  "buyer",
-  "lot_notes",
-  "previous_owner",
-  "previous_sales",
-  "post_owner",
-  "post_sales",
-  "sale_date",
-  "expert",
-  "commissaire",
-  "auction_house",
-  "sale_location",
-  "lugt_no")
+# Read in the original data file as one long column of text
+one_col <- data_frame(text = read_lines(system.file("extdata", "britishsales.txt", package = "londonauctions")))
 
-# Read in CSV with the given column headers
-base_sales <- read_csv(system.file("extdata", "all_england.csv", package = "londonauctions"), skip = 1, col_names = correct_cols, col_types = "cccccccccccccccccccccccccc")
+# These are the variables we want to preserve for each record
+req_vars <- c("--RECORD NUMBER--", "Edit Status", "Lot Sale Date", "Sale Begin Date", "Sale End Date", "Transaction", "Price")
+
+base_sales <- one_col %>%
+  # Split the single column of text into two cols: variable and value
+  separate(text, into = c("variable", "value"), sep = 17) %>%
+  # Trim any whitespace from either column
+  mutate(variable = str_trim(variable), value = str_trim(value)) %>%
+  # Only keep those rows that are in the req_vars list
+  filter(variable %in% req_vars) %>%
+  # To group a set of rows with a particular object, create an id column that
+  # increments +1 each time it hits a "--RECORD NUMBER--" row
+  mutate(objnum = cumsum(variable == "--RECORD NUMBER--")) %>%
+  # Now spread() the table into one column per variable, and one row per observation
+  spread(variable, value) %>% 
+  # And rename column variables to be more standardized
+  select(objnum, is_edited = `Edit Status`, sale_date = `Lot Sale Date`, sale_begin = `Sale Begin Date`, sale_end = `Sale End Date`, transaction_type = Transaction, amt = Price)
+
 
 # Create a working data frame for all newly-generated columns
 sales <- base_sales
