@@ -257,9 +257,13 @@ parliament_dates <- read_csv(system.file("extdata", "parliament_dates.csv", pack
 
 # Getty Catalogue Input
 
-They Getty has not yet input all of its catalogues.
+They Getty has not yet input all of its historical sales catalogs. This table describes the data entry progress of known sale catalogs as of 8/19/2015.
 
 ```{r getty_input}
 getty_catalogs <- read_csv(system.file("extdata", "catalog_completion.csv", package = "londonauctions")) %>% 
-  mutate(is_input = ifelse(is_input == "yes", TRUE, FALSE))
+  mutate(
+    is_input = ifelse(is_input == "yes", TRUE, FALSE),
+    sale_begin = ymd(sale_begin),
+    year = year(sale_begin) %>% as.integer()
+  )
 ```
