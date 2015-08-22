@@ -55,7 +55,7 @@
 #' Getty Catalogue Digitization Progress
 #'
 #' A table describing the Getty's progress in digitizing their sales catalogs.
-#' @format A data frame with 8393 ovservations of 4 variables:
+#' @format A data frame with 8393 observations of 4 variables:
 #' \describe{
 #'  \item{sale_begin}{POSIXct. The start date for the sale described by the catalog.}
 #'  \item{sale_no}{Character. The sale catalog id number.}
