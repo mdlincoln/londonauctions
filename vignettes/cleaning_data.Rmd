@@ -107,9 +107,10 @@ sales$transaction_type <- str_replace(sales$transaction_type, "\\?|\\[\\?\\]", "
 
 ## Transaction amounts
 
-Amounts are generally listed in pounds sterling. There are very few sales with uncertain prices. We will exclude these. There are
-also comparatively few lots with more than one price attached. We will also
-exclude these.
+Before parsing the numbers contained in the sales column, we must parse textual information stored alongside them:
+
+- Some prices are marked with `?` suggesting the price is disputed
+- Some lots have two prices indicated with `[or]`
 
 ```{r transaction_amounts}
 # Create a separate column denoting uncertainty
@@ -123,8 +124,21 @@ nrow(sales %>% filter(amt_is_uncertain == TRUE))
 # How many sales have more than one price?
 nrow(sales %>% filter(has_double_price == TRUE))
 
+# How many records have no transaction information at all?
+nrow(sales %>% filter(is.na(transaction)))
+
+# Filter out sales whose prices are uncertain or which are doubled, while NOT 
+# YET discarding those that had no price to begin with; these can be handled in
+# later analysis.
 sales <- sales %>% filter(amt_is_uncertain == FALSE & has_double_price == FALSE)
+
+nrow(sales)
 ```
+
+There are very few sales with
+uncertain prices. We will exclude these. There are also comparatively few lots
+with more than one price attached. We will also exclude these, so as not to
+interfere with the later price quantile ranking.
 
 
 ```{r numeric_price}
