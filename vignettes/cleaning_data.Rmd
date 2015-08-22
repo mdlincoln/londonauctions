@@ -13,68 +13,47 @@ library(dplyr)
 library(readr)
 library(stringr)
 library(lubridate)
+library(tidyr)
 ```
 
 # Paintings sales
 
-The Getty Provenance Index staff has supplied us with a CSV export of their
+The Getty Provenance Index staff has supplied us with a text export of their
 database for all sales of _paintings_ made by auction houses _in London_. We
 will first load this table into the R data processing environment, and make a
 working copy of it.
 
 ```{r load_data}
-# Specify the correct column names
-correct_cols <- c(
-  "cat_no",
-  "lot_no",
-  "artist_name_1",
-  "artist_name_2",
-  "artist_name_3",
-  "artist_name_4",
-  "artist_name_5",
-  "title",
-  "annotations",
-  "object_type",
-  "object_notes",
-  "inscription",
-  "seller",
-  "transaction",
-  "buyer",
-  "lot_notes",
-  "previous_owner",
-  "previous_sales",
-  "post_owner",
-  "post_sales",
-  "sale_date",
-  "expert",
-  "commissaire",
-  "auction_house",
-  "sale_location",
-  "lugt_no")
+# Read in the original data file as one long column of text
+one_col <- data_frame(text = read_lines(system.file("extdata", "britishsales.txt", package = "londonauctions")))
 
-# Read in CSV with the given column headers
-base_sales <- read_csv(system.file("extdata", "all_england.csv", package = "londonauctions"), skip = 1, col_names = correct_cols, col_types = "cccccccccccccccccccccccccc")
+# These are the variables we want to preserve for each record
+req_vars <- c("--RECORD NUMBER--", "BBF Number", "Lot Number", "Edit Status", "Lot Sale Date", "Sale Begin Date", "Sale End Date", "Transaction", "Price", "Auct.House Auth.")
+
+base_sales <- one_col %>%
+  # Split the single column of text into two cols: variable and value
+  separate(text, into = c("variable", "value"), sep = 17) %>%
+  # Trim any whitespace from either column
+  mutate(variable = str_trim(variable), value = str_trim(value)) %>%
+  # Only keep those rows that are in the req_vars list
+  filter(variable %in% req_vars) %>%
+  # To group a set of rows with a particular object, create an id column that
+  # increments +1 each time it hits a "--RECORD NUMBER--" row
+  mutate(objnum = cumsum(variable == "--RECORD NUMBER--")) %>%
+  # Now spread() the table into one column per variable, and one row per observation
+  spread(variable, value) %>% 
+  # And rename column variables to be more standardized
+  select(cat_no = `BBF Number`, lot_no = `Lot Number`, auction_house = `Auct.House Auth.`, is_edited = `Edit Status`, sale_date = `Lot Sale Date`, sale_begin = `Sale Begin Date`, sale_end = `Sale End Date`, transaction_type = Transaction, transaction = Price)
+
 
 # Create a working data frame for all newly-generated columns
 sales <- base_sales
 
-# Number of records:
+# Original number of records:
 nrow(sales)
 ```
 
 Having loaded the data, we perform several cleaning operations to extract sturctured information from the semi-structured text entered in many fields of the Getty database.
-
-## Object type and Sale location
-
-We will only keep records for sales of _paintings_ that took place in _London, England_
-
-```{r object_types}
-# Consider only paintings sold in London
-sales <- sales %>% filter(object_type == "Painting" & sale_location == "London, England")
-
-# Number of records:
-nrow(sales)
-```
 
 ## Dates
 
@@ -85,23 +64,8 @@ specified after this. If an exact date was specified for a lot, we assigned that
 date. If only a range was given, we used the first date of the given range.
 
 ```{r parse_dates}
-# This function deals with two cases. Where specific dates per lot are
-# mentioned, the function retrieves that date. When no specific lot is
-# mentioned, then the first combination of year, month, and day are taken to be
-# the date.
-
-sales$date_string <- ifelse(
-  # Check if a specific lot is mentioned
-  str_detect(sales$sale_date, "This Lot"),
-  # If so, extract the specific lot date
-  paste(str_match(sales$sale_date, "(\\d{4}?)")[,2], str_match(sales$sale_date, "This Lot: (.{6})")[,2], sep = " "),
-  # If not, extract the first complete date mentioned
-  str_match(sales$sale_date, "^(\\d{4} \\w{3}? \\d{1,2})")[,2]
-)
-
-# Having constructed date text for each individual lot, we now use R's
-# date-parsing functions to convert these into standard date formats.
-sales$date <- ymd(sales$date_string)
+# Use R's date-parsing functions to convert these into standard date formats.
+sales$date <- ymd(sales$sale_date)
 
 # From this standard date field, we will derive additional integer values for
 # year, month, week of the year, day of the year, day of the month, day of the
@@ -115,11 +79,6 @@ sales$mday <- mday(sales$date) %>% as.integer()
 sales$wday <- wday(sales$date) %>% as.integer()
 ```
 
-This leaves about 1858 dates that are not fully described, e.g. that have only
-the month of the sale, not the specific date. Because we are interested in the
-timing of sales at the precision of days, we must exclude these
-partially-documented sales from our analysis.
-
 ```{r exclude_undated}
 sales <- sales %>% filter(between(year, 1780, 1840))
 
@@ -127,21 +86,70 @@ sales <- sales %>% filter(between(year, 1780, 1840))
 nrow(sales)
 ```
   
-## Transaction types and amounts
+## Transaction type
 
-Transaction information involves both categorical descriptions of transaction
-types (sold, bought in, etc.) and, in some cases, a recorded transaction amount.
-The Getty database concatenates this information into a single text field, so we
-will have to extract both the categorical and numeric information from it.
+The Getty data have a transaction type field that describes if a lot was sold,
+bought in, passed, withdrawn, unknown, or some uncertain combination of any of
+those. A few fields are also marked with `?` or `[?]` denoting further
+uncertainty. We break these markers out into a second column.
 
-```{r transaction_extraction}
-# Capture transaction type information recorded in the first segment of the transaction column
-sales$transaction_type <- tolower(trimws(str_match(sales$transaction, "^([A-Za-z ]+)")[,2]))
+```{r transaction_types}
+# Clean up transaction_type column
 
-# Capture numeric information contained in the second half of the transaction column
-sales$transaction_amt <- str_match(sales$transaction, ",\\s*(\\d+[[:punct:]]?\\d*)")[,2]
-# Fix up odd punctuation and convert to numeric
-sales$transaction_amt <- as.numeric(str_replace(sales$transaction_amt, "[[:punct:]]", "."))
+# Everything to lowercase
+sales$transaction_type <- tolower(sales$transaction_type)
+
+# Create a separate column denoting uncertainty
+sales$type_is_uncertain <- str_detect(sales$transaction_type, "\\?")
+# Remove ? and [?] from the transaction_type field
+sales$transaction_type <- str_replace(sales$transaction_type, "\\?|\\[\\?\\]", "") %>% str_trim()
+```
+
+## Transaction amounts
+
+Before parsing the numbers contained in the sales column, we must parse textual information stored alongside them:
+
+- Some prices are marked with `?` suggesting the price is disputed
+- Some lots have two prices indicated with `[or]`
+
+```{r transaction_amounts}
+# Create a separate column denoting uncertainty
+sales$amt_is_uncertain <- str_detect(sales$transaction, "\\?")
+# Create a separate column denoting multiple prices
+sales$has_double_price <- str_detect(sales$transaction, "\\[or\\]")
+
+# How many sales have uncertain amounts?
+nrow(sales %>% filter(amt_is_uncertain == TRUE))
+
+# How many sales have more than one price?
+nrow(sales %>% filter(has_double_price == TRUE))
+
+# How many records have no transaction information at all?
+nrow(sales %>% filter(is.na(transaction)))
+
+# Filter out sales whose prices are uncertain or which are doubled, while NOT 
+# YET discarding those that had no price to begin with; these can be handled in
+# later analysis.
+sales <- sales %>% filter(amt_is_uncertain == FALSE & has_double_price == FALSE)
+
+nrow(sales)
+```
+
+There are very few sales with
+uncertain prices. We will exclude these. There are also comparatively few lots
+with more than one price attached. We will also exclude these, so as not to
+interfere with the later price quantile ranking.
+
+
+```{r numeric_price}
+# Detect the price number within the transaction amount field
+sales$transaction_amt <- sales$transaction %>% 
+  # Replace some puncutation where the decimal place is marked by a comma instead of a period
+  str_replace("[,]", ".") %>% 
+  # Extract numbers that may or may not have decimal places
+  str_extract("\\d+(?:\\.\\d+)?") %>% 
+  # Convert strings to numeric information
+  as.numeric()
 
 # Provisional sum of sale prices:
 sum(sales$transaction_amt, na.rm = TRUE)
@@ -205,10 +213,10 @@ sales <- sales %>%
   ungroup()
 ```
 
-```{r save_data, eval = FALSE}
+```{r save_data}
 # Select pertinent columns of data and save for analyses
 sales <- sales %>% 
-  select(cat_no, lot_no, auction_house, date, transaction_type, transaction_amt, year, month, week, yday, mday, wday, price_factor)
+  select(cat_no, lot_no, auction_house, date, transaction_type, type_is_uncertain, transaction_amt, year, month, week, yday, mday, wday, price_factor)
 ```
 
 # Royal Academy dates
@@ -244,5 +252,18 @@ parliament_dates <- read_csv(system.file("extdata", "parliament_dates.csv", pack
     par_end_year = end_year,
     par_start_day = start_yday,
     par_end_day = end_yday
+  )
+```
+
+# Getty Catalogue Input
+
+They Getty has not yet input all of its historical sales catalogs. This table describes the data entry progress of known sale catalogs as of 8/19/2015.
+
+```{r getty_input}
+getty_catalogs <- read_csv(system.file("extdata", "catalog_completion.csv", package = "londonauctions")) %>% 
+  mutate(
+    is_input = ifelse(is_input == "yes", TRUE, FALSE),
+    sale_begin = ymd(sale_begin),
+    year = year(sale_begin) %>% as.integer()
   )
 ```
