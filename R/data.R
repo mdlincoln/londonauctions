@@ -41,7 +41,7 @@
 #' Parliament Dates
 #'
 #' A table of the starting and ending dates for Parliament, 1715-1831.
-#' @format A data frame with 128 observations of 46 variables:
+#' @format A data frame with 128 observations of 6 variables:
 #' \describe{
 #'  \item{par_start}{POSIXct. The date of the parliament start}
 #'  \item{par_end}{POSIXct. The date of the parliament end}
