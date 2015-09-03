@@ -80,7 +80,7 @@ sales$wday <- wday(sales$date) %>% as.integer()
 ```
 
 ```{r exclude_undated}
-sales <- sales %>% filter(between(year, 1780, 1840))
+sales <- sales %>% filter(between(year, 1780, 1835))
 
 # Number of records:
 nrow(sales)
