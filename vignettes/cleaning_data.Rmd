@@ -280,5 +280,7 @@ getty_catalogs <- read_csv(system.file("extdata", "catalog_completion.csv", pack
     is_input = ifelse(is_input == "yes", TRUE, FALSE),
     sale_begin = ymd(sale_begin),
     year = year(sale_begin) %>% as.integer()
-  )
+  ) %>% 
+  # There is one malformed row with a bad date that we must remove
+  filter(year > 1500)
 ```
