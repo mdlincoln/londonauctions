@@ -3,5 +3,6 @@
 .RData
 *.Rproj
 inst/doc
+inst/plots
 vignettes/*.R
 vignettes/*.html
