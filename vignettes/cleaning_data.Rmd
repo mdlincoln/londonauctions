@@ -150,6 +150,23 @@ uncertain prices. We will exclude these. There are also comparatively few lots
 with more than one price attached. We will also exclude these, so as not to
 interfere with the later price quantile ranking.
 
+## Auction Houses
+
+```{r auction_houses}
+# Number of auction houses to count individually; the rest will be classified as "other"
+n_houses <- 10
+
+sales %>% 
+  count(auction_house, sort = TRUE) %>% 
+  mutate(auction_house = c(auction_house[1:n_houses], rep("other", nrow(.)-n_houses))) %>% 
+  group_by(auction_house) %>% 
+  summarize(sales = sum(n)) %>% 
+  arrange(desc(sales)) %>% 
+  mutate(share = sales/sum(sales)) %>% 
+  knitr::kable(digits = 2, format.args = list(big.mark= ","))
+
+```
+
 
 ```{r numeric_price}
 # Detect the price number within the transaction amount field
