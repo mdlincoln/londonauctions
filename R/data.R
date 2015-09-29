@@ -2,7 +2,7 @@
 #'
 #' A cleaned database of paintings records derived from the Getty Provenance Index.
 #'
-#' @format A data frame with 13 variables:
+#' @format A data frame with 12 variables:
 #' \describe{
 #'  \item{cat_no}{Character. Auction catalogue number}
 #'  \item{lot_no}{Character. Lot number}
@@ -19,8 +19,6 @@
 #'  \item{yday}{Integer. Day of the year.}
 #'  \item{mday}{Integer. Day of the month.}
 #'  \item{wday}{Integer. Day of the week.}
-#'  \item{price_factor}{Integer. The lot's prince quintile compared to
-#'   other sales from that same year.}
 #' }
 #'
 "sales"
