@@ -82,18 +82,22 @@ ggplot(sales, aes(x = year, fill = !is.na(transaction_amt))) +
   scale_fill_brewer(type = "qual", palette = 6) +
   theme(legend.position = "bottom") +
   labs(x = "Year", y = "Painting lots auctioned per year", fill = "has transaction price?")
+
+dualplot(per_year, "per_year")
 ```
 
 Code for generating Figure 2.
 
 ```{r per_month}
 month_names <- c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
-ggplot(sales %>% mutate(month = factor(month, labels = month_names)), aes(x = month, fill = !is.na(transaction_amt))) +
+per_month <- ggplot(sales %>% mutate(month = factor(month, labels = month_names)), aes(x = month)) +
   theme_bw() +
   geom_histogram(alpha = 0.7) +
   scale_fill_brewer(type = "qual", palette = 6) +
   theme(legend.position = "bottom") +
   labs(x = "Year", y = "Paintings auctioned per month", fill = "has transaction price?")
+
+dualplot(per_month, "per_month")
 ```
 
 We are interested in measuring how temporally-concentrated sales were in a given
@@ -127,13 +131,15 @@ top_examples <- sales %>%
     rank = min_rank(desc(n)),
     is_top = rank <= 7)
   
-ggplot(top_examples, aes(x = yday, y = n, fill = is_top)) +
+vis_top_example <- ggplot(top_examples, aes(x = yday, y = n, fill = is_top)) +
   geom_bar(stat = "identity") +
   scale_fill_manual(values = c("black", "red")) +
   facet_wrap(~ year, ncol = 1) +
   theme_bw() +
   theme(legend.position = "none") +
   labs(x = "Day of the year (with top seven days highlighted)", y = "Number of sales")
+
+dualplot(vis_top_example, "vis_top_example", h = 7)
 ```
 
 [^cv]: The coefficient of variation for a given set of numbers is the ratio of
@@ -257,7 +263,7 @@ factors of artworks, while each row represents a different measurement method.
 # can use ggplot to color each facet based on the value. Plot the change in 
 # distribution of these top days between 1780-1840, coloring the plots based on
 # the magnitude of the predicted change.
-all_peaks %>%
+cv_results <- all_peaks %>%
   inner_join(models, by = c("price_factor", "type")) %>%
   mutate(
     type = factor(
@@ -279,6 +285,8 @@ all_peaks %>%
     y = paste0("Coefficient of variation of the top ", n_days, " days per year"),
     color = "Decrease in the CV of top sales days per year"
   )
+
+dualplot(cv_results, "cv_results", h = 9, w = 9)
 ```
 
 A benefit of this facetting is the ability to quickly discern that, in this
@@ -313,7 +321,7 @@ ra_overlap <- peak_n %>%
   mutate(n = mean(during_exhib)) %>% 
   ungroup()
   
-ggplot(ra_overlap, aes(x = year, y = yday)) +
+ra_plot <- ggplot(ra_overlap, aes(x = year, y = yday)) +
   geom_point(size = 2, alpha = 0.5) +
   geom_ribbon(aes(ymin = exhib_start_day, ymax = exhib_end_day, na.rm = TRUE), alpha = 0.5) +
   geom_rug(aes(color = n), size = 2, sides = "b") +
@@ -332,6 +340,7 @@ ggplot(ra_overlap, aes(x = year, y = yday)) +
     alpha = "Royal Exhibition open"
   ) +
   ylim(1, 365)
+dualplot(ra_plot, "ra_plot")
 ```
 
 We can also plot the parliament session dates for the same period. Around
@@ -358,7 +367,7 @@ parliament_overlap <- peak_n %>%
       levels = c("avg_day", "count_day", "sum_day"),
       labels = c( "Highest average price", "Highest number of sales", "Higest total revenue")))
 
-ggplot(parliament_overlap, aes(x = year, y = yday)) +
+par_plot <- ggplot(parliament_overlap, aes(x = year, y = yday)) +
   geom_point(size = 2, alpha = 0.5) +
   geom_point(aes(y = par_end_day, na.rm = TRUE), alpha = 0.5, color = "red") +
   geom_point(aes(y = par_start_day, na.rm = TRUE), alpha = 0.5, color = "blue") +
@@ -373,4 +382,6 @@ ggplot(parliament_overlap, aes(x = year, y = yday)) +
     y = "Day of the year"
   ) +
   ylim(1, 365)
+
+dualplot(par_plot, "par_plot")
 ```
