@@ -76,10 +76,9 @@ sales <- sales %>% filter()
 Code for generating Figure 1.
 
 ```{r per_year}
-ggplot(sales, aes(x = year, fill = !is.na(transaction_amt))) +
-  geom_histogram(binwidth = 1, alpha = 0.7) +
+per_year <- ggplot(sales, aes(x = year)) +
+  geom_histogram(binwidth = 1) +
   theme_bw() +
-  scale_fill_brewer(type = "qual", palette = 6) +
   theme(legend.position = "bottom") +
   labs(x = "Year", y = "Painting lots auctioned per year", fill = "has transaction price?")
 
@@ -92,8 +91,7 @@ Code for generating Figure 2.
 month_names <- c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
 per_month <- ggplot(sales %>% mutate(month = factor(month, labels = month_names)), aes(x = month)) +
   theme_bw() +
-  geom_histogram(alpha = 0.7) +
-  scale_fill_brewer(type = "qual", palette = 6) +
+  geom_histogram() +
   theme(legend.position = "bottom") +
   labs(x = "Year", y = "Paintings auctioned per month", fill = "has transaction price?")
 
