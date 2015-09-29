@@ -127,11 +127,6 @@ nrow(sales %>% filter(has_double_price == TRUE))
 # How many records have no transaction information at all?
 nrow(sales %>% filter(is.na(transaction)))
 
-# Filter out sales whose prices are uncertain or which are doubled, while NOT 
-# YET discarding those that had no price to begin with; these can be handled in
-# later analysis.
-sales <- sales %>% filter(amt_is_uncertain == FALSE & has_double_price == FALSE & transaction_type == "bought in")
-
 # Summary table that shows the top most frequently ocurring transaction types,
 # and compresses the rest into an "other" field
 sale_share <- sales %>%
@@ -213,25 +208,11 @@ sales$transaction_amt <- ifelse(sales$bracket_letter == "k", sales$transaction_a
 sum(sales$transaction_amt, na.rm = TRUE)
 ```
 
-## Price factor
-
-Due to inflation and deflation, it is difficult to compare absolute prices
-across the period of study. A simple solution to this problem is to categorize
-artworks into groups of most expensive and least expensive within their own
-years. The following function will group artowrks by year and split them into 5
-buckets within their year, based on their price relative to other
-
-```{r price_factor}
-sales <- sales %>% 
-  group_by(year) %>% 
-  mutate(price_factor = ntile(transaction_amt, n = 5)) %>% 
-  ungroup()
-```
 
 ```{r save_data}
 # Select pertinent columns of data and save for analyses
 sales <- sales %>% 
-  select(cat_no, lot_no, auction_house, date, transaction_type, type_is_uncertain, transaction_amt, year, month, week, yday, mday, wday, price_factor)
+  select(cat_no, lot_no, auction_house, date, transaction_type, type_is_uncertain, amt_is_uncertain, has_double_price, transaction_amt, year, month, week, yday, mday, wday)
 ```
 
 # Royal Academy dates
