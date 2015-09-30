@@ -16,6 +16,10 @@ library(tidyr)
 library(dplyr)
 library(ggplot2)
 library(broom)
+n_days <- 7
+
+yday_months_x <- scale_x_discrete(breaks = cumsum(c(1, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)), labels = c(month.name, "January"))
+yday_months_y <- scale_y_discrete(breaks = cumsum(c(1, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)), labels = c(month.name, "January"))
 ```
 
 ## Getty Sales Catalogs: What are the known unknowns?
@@ -46,7 +50,7 @@ setting up the pricing categories.
 # Filter out sales whose prices are uncertain or which are doubled, while NOT 
 # YET discarding those that had no price to begin with; these can be handled in
 # later analysis.
-sales <- sales %>% filter(amt_is_uncertain == FALSE & has_double_price == FALSE & transaction_type %in% c("sold", "bought in", "sold or bought in"))
+usable_sales <- sales %>% filter(amt_is_uncertain == FALSE & has_double_price == FALSE & transaction_type %in% c("sold", "bought in", "sold or bought in"))
 ```
 
 ## Price factor
@@ -58,7 +62,7 @@ years. The following function will group artowrks by year and split them into 5
 buckets within their year, based on their price relative to other
 
 ```{r price_factor}
-sales <- sales %>% 
+usable_sales <- usable_sales %>% 
   group_by(year) %>% 
   mutate(price_factor = ntile(transaction_amt, n = 5)) %>% 
   ungroup()
@@ -70,13 +74,15 @@ for this is comparing auction houses, as they would still set their schedule
 relative to each other in part based on these overall price factors.
 
 ```{r post_factor_filter}
-sales <- sales %>% filter()
+all_sales <- usable_sales
+christies_sales <- usable_sales %>% filter(auction_house == "Christie's")
+other_sales <- usable_sales %>% filter(!auction_house %in% c("Christie's"))
 ```
 
 Code for generating Figure 1.
 
 ```{r per_year}
-per_year <- ggplot(sales, aes(x = year)) +
+per_year <- ggplot(usable_sales, aes(x = year)) +
   geom_histogram(binwidth = 1) +
   theme_bw() +
   theme(legend.position = "bottom") +
@@ -89,7 +95,7 @@ Code for generating Figure 2.
 
 ```{r per_month}
 month_names <- c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
-per_month <- ggplot(sales %>% mutate(month = factor(month, labels = month_names)), aes(x = month)) +
+per_month <- ggplot(usable_sales %>% mutate(month = factor(month, labels = month_names)), aes(x = month)) +
   theme_bw() +
   geom_histogram() +
   theme(legend.position = "bottom") +
@@ -104,14 +110,15 @@ within our period of study suggests that auctioneers in later years increasingly
 concentrated their sales within a shorter period.
 
 ```{r example_years}
-sales %>% 
+usable_sales %>% 
   filter(year %in% seq(1800, 1830, 10), price_factor == 5) %>% 
   count(year, yday) %>% 
   ggplot(aes(x = yday, y = n)) +
   geom_bar(stat = "identity") +
   facet_wrap(~ year, ncol = 1) +
   theme_bw() +
-  labs(x = "Day of the year", y = "Number of sales")
+  labs(x = "Day of the year", y = "Number of sales") +
+  yday_months_x
 ```
 
 To focus our analysis on the spread of the most successful sales for each year, 
@@ -120,22 +127,30 @@ of variation_.[^cv] Here is the same visualization of sale days, with the seven
 top sales days for each year marked in red:
 
 ```{r example_top, echo=FALSE}
-top_examples <- sales %>% 
+top_examples <- usable_sales %>% 
   filter(year %in% seq(1800, 1830, 10), price_factor == 5) %>% 
   count(year, yday) %>% 
   mutate(
     # In the case that multiple days tie for the same number of sales, all will
     # be included in the calculation
     rank = min_rank(desc(n)),
-    is_top = rank <= 7)
+    is_top = rank <= 7) %>% 
+  ungroup()
+
+cv_examples <- top_examples %>% 
+  filter(is_top == TRUE) %>% 
+  group_by(year) %>% 
+  summarize(cv = sd(yday)/mean(yday))
   
 vis_top_example <- ggplot(top_examples, aes(x = yday, y = n, fill = is_top)) +
   geom_bar(stat = "identity") +
+  geom_text(data = cv_examples, x = 250, y = 50, aes(label = paste("CV =", format(cv, digits = 2)), fill = NULL)) +
   scale_fill_manual(values = c("black", "red")) +
   facet_wrap(~ year, ncol = 1) +
   theme_bw() +
   theme(legend.position = "none") +
-  labs(x = "Day of the year (with top seven days highlighted)", y = "Number of sales")
+  labs(x = "Day of the year (with top seven days highlighted)", y = "Number of sales") +
+  yday_months_x
 
 dualplot(vis_top_example, "vis_top_example", h = 7)
 ```
@@ -145,24 +160,15 @@ the set's standard deviation to its mean. It shows the extent of variability in
 the set relative to the mean value
 
 From these example years, we see that the top-most days become increasingly
-concentratee cgetween 1790 and 1830. The coefficient of variation (the standard
+concentrated between 1790 and 1830. The coefficient of variation (the standard
 deviation of each day by the mean of all days) confirms this visual impression.
 Years with more concentrated top sales days have a lower coefficient of
 variation; their top sales days are simply closer to eachother in the calendar
 year.
 
-```{r, results='asis'}
-cv_examples <- top_examples %>% 
-  filter(is_top == TRUE) %>% 
-  group_by(year) %>% 
-  summarize(cv = sd(yday)/mean(yday))
-
-knitr::kable(cv_examples, digits = 3)
-```
-
 We want to measure if the CV of yearly top sales days is significantly changing.
 We also want to nuance this measurement with two additional facets: the price
-factor of teh artwork (did it fall into the most expensive or least expensive of
+factor of the artwork (did it fall into the most expensive or least expensive of
 artworks sold that year?) and three different ways of measuring the auction
 performance of a given day: the number of lots sold, the sum of all recorded
 transaction amounts per day, and the average lot price for that day.
@@ -170,47 +176,8 @@ transaction amounts per day, and the average lot price for that day.
 First, we'll calculate the number of sales, total amount, and average amount for
 every day of every year, grouping sales by their price factor:
 
-```{r top_n}
-# Calculate count, total, and average for every day of every year, grouped by
-# price_factor
-peaks <- sales %>%
-  # Only consider records that have price information
-  filter(!(is.na(price_factor))) %>%
-  group_by(year, yday, price_factor) %>%
-  summarize(
-    daily_count = n(),
-    daily_sum = sum(transaction_amt),
-    daily_avg = daily_sum/daily_count
-  )
-```
-
 Next, we will filter these results to include only the top 7 days of each year,
-again grouped by price factor:
-
-```{r}
-# What number of top days will be considered in the calculation of seasonal
-# spread?
-n_days <- 7
-
-# Find the top-N days in terms of daily_count, daily_sum, and daily_avg
-peak_n <- peaks %>%
-  group_by(year, price_factor) %>%
-  top_n(n_days, daily_count) %>%
-  select(year, price_factor, count_day = yday) %>% 
-  ungroup()
-
-peak_sum <- peaks %>%
-  group_by(year, price_factor) %>%
-  top_n(n_days, daily_sum) %>% 
-  select(year, price_factor, sum_day = yday) %>% 
-  ungroup()
-
-peak_avg <- peaks %>%
-  group_by(year, price_factor) %>%
-  top_n(n_days, daily_avg) %>% 
-  select(year, price_factor, avg_day = yday) %>% 
-  ungroup()
-```
+again grouped by price factor.
 
 Next, we will calculate the CV of these top days for each year and price factor.
 Finally, we will run a linear regression model on these results. This is a
@@ -220,26 +187,6 @@ and the coefficient of variation of top sales days. The linear regression gives
 us a firm statistical footing to claim whether or not _the data we have_ support
 the hypothesis that auctioneers increasingly scheduled top sales days close to
 eachother in the calendar year.
-
-```{r changing_cv}
-# Calculate the coefficient of variation of the top-N days for each year and price
-# factor - i.e. how spread apart through the year are they? Combine into one
-# table for easy plotting and analysis
-all_peaks <- peak_n %>% group_by(year, price_factor) %>% summarize(count_cv = sd(count_day)/mean(count_day)) %>%
-  left_join(peak_sum %>% group_by(year, price_factor) %>% summarize(sum_cv = sd(sum_day)/mean(sum_day)), by = c("year", "price_factor")) %>%
-  left_join(peak_avg %>% group_by(year, price_factor) %>% summarize(avg_cv = sd(avg_day)/mean(avg_day)), by = c("year", "price_factor")) %>%
-  gather(type, cv, count_cv, sum_cv, avg_cv)
-
-# Run linear regressions to find corellation between the year and the spread of
-# top auction days
-models <- all_peaks %>%
-  group_by(price_factor, type) %>%
-  do(lms = lm(year ~ cv, data = .)) %>%
-  tidy(lms) %>%
-  filter(term == "cv") %>% 
-  mutate(sig = p.value < 0.05) %>% 
-  ungroup()
-```
 
 The following facetted scatterplot presents the variation of top days, overlaid
 with the results of our linear regression models. The years of the study period
@@ -261,17 +208,19 @@ factors of artworks, while each row represents a different measurement method.
 # can use ggplot to color each facet based on the value. Plot the change in 
 # distribution of these top days between 1780-1840, coloring the plots based on
 # the magnitude of the predicted change.
-cv_results <- all_peaks %>%
-  inner_join(models, by = c("price_factor", "type")) %>%
-  mutate(
-    type = factor(
-      type,
-      levels = c("avg_cv", "count_cv", "sum_cv"),
-      labels = c( "Highest average price", "Highest number of sales", "Higest total revenue"))) %>%
+cv_results <- bind_rows(
+  "all sales" = all_sales, 
+  "Christie's only" = christies_sales, 
+  "other houses" = other_sales, 
+  .id = "set"
+) %>% 
+  group_by(set) %>% 
+  do(cv_trends(., n_days = n_days)) %>% 
+  filter(type == "count_cv") %>% 
   ggplot(aes(x = year, y = cv, color = estimate)) +
   geom_point(size = 3, alpha = 0.5) +
-  geom_smooth(method = "lm") +
-  facet_grid(type ~ price_factor) +
+  geom_smooth(method = "lm", se = TRUE) +
+  facet_grid(set ~ price_factor) +
   theme_bw() +
   scale_color_gradient(low = "red", high = "black") +
   theme(
@@ -280,11 +229,10 @@ cv_results <- all_peaks %>%
   ) +
   labs(
     x = "Year",
-    y = paste0("Coefficient of variation of the top ", n_days, " days per year"),
-    color = "Decrease in the CV of top sales days per year"
+    y = paste0("Coefficient of variation of the top ", n_days, " days per year")
   )
 
-dualplot(cv_results, "cv_results", h = 9, w = 9)
+dualplot(cv_results, "cv_results", h = 7, w = 9)
 ```
 
 A benefit of this facetting is the ability to quickly discern that, in this
@@ -296,6 +244,29 @@ regardless of measurement method. Similarly, we find that the spread of top days
 ```{r ra}
 
 # Plot top N days against RA exhibition dates
+
+ra_overlap <- bind_rows(
+  "all sales" = all_sales,
+  "Christie's only" = christies_sales,
+  "other houses" = other_sales,
+  .id = "set"
+) %>% 
+  inner_join(ra_dates %>% select(year = exhib_year, exhib_start_day, exhib_end_day), by = "year") %>%
+  mutate(
+    after_start = yday >= exhib_start_day,
+    during_exhib = yday >= exhib_start_day & yday <= exhib_end_day) %>% 
+  filter(price_factor == 5)
+
+ggplot(ra_overlap, aes(x = year, weight = transaction_amt, fill = during_exhib)) +
+  geom_density(position = "fill", alpha = 0.6) +
+  scale_fill_brewer(type = "qual", palette = 6) +
+  facet_wrap(~set) +
+  theme_bw()
+
+ra_ribbon <- ra_overlap %>% 
+  group_by(set, year) %>% 
+  mutate()
+  
 
 # Join a table with the top N days together
 ra_overlap <- peak_n %>%
@@ -321,8 +292,8 @@ ra_overlap <- peak_n %>%
   
 ra_plot <- ggplot(ra_overlap, aes(x = year, y = yday)) +
   geom_point(size = 2, alpha = 0.5) +
-  geom_ribbon(aes(ymin = exhib_start_day, ymax = exhib_end_day, na.rm = TRUE), alpha = 0.5) +
-  geom_rug(aes(color = n), size = 2, sides = "b") +
+  geom_ribbon(aes(ymin = exhib_start_day, ymax = exhib_end_day, na.rm = TRUE), alpha = 0.0) +
+  #geom_rug(aes(color = n), size = 2, sides = "b") +
   scale_color_gradient(low = "white", high = "red") +
   facet_wrap(~ type, nrow = 1) +
   theme_bw() +
@@ -338,6 +309,7 @@ ra_plot <- ggplot(ra_overlap, aes(x = year, y = yday)) +
     alpha = "Royal Exhibition open"
   ) +
   ylim(1, 365)
+
 dualplot(ra_plot, "ra_plot")
 ```
 
@@ -382,4 +354,29 @@ par_plot <- ggplot(parliament_overlap, aes(x = year, y = yday)) +
   ylim(1, 365)
 
 dualplot(par_plot, "par_plot")
+```
+
+
+Did Christie's navigate with houses like Fosters and Phillips to find slots on the calendar year?
+
+```{r auction_house_shuffle}
+houses <- usable_sales %>%
+  filter(
+    auction_house %in% c("Christie's", "Foster (Edward)", "Phillips (Harry)") &
+      price_factor == 5) %>% 
+  group_by(auction_house) %>% 
+  do(peak_n(df = ., n_days = 7)) %>% 
+  ungroup()
+
+house_dist <- ggplot(houses, aes(x = year)) +
+  geom_jitter(aes(y = yday, color = auction_house), size = 3, alpha = 0.7) +
+  # geom_line(data = ra_dates, aes(x = exhib_year, y = exhib_start_day), size = 1, color = "black") +
+  # geom_line(data = ra_dates, aes(x = exhib_year, y = exhib_end_day), size = 1, color = "black") +
+  yday_months_y +
+  theme_bw() +
+  xlim(1780, 1835) +
+  theme(legend.position = "bottom") +
+  labs(x = NULL, y = paste("date of top", n_days, "days"), color = "auction house")
+
+dualplot(house_dist, "house_dist", h = 7)
 ```
