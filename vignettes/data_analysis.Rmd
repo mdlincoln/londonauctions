@@ -79,7 +79,7 @@ christies_sales <- usable_sales %>% filter(auction_house == "Christie's")
 other_sales <- usable_sales %>% filter(!auction_house %in% c("Christie's"))
 ```
 
-Code for generating Figure 1.
+Auctions per year
 
 ```{r per_year}
 per_year <- ggplot(usable_sales, aes(x = year)) +
@@ -91,17 +91,30 @@ per_year <- ggplot(usable_sales, aes(x = year)) +
 dualplot(per_year, "per_year")
 ```
 
-Code for generating Figure 2.
+Auctions per month
 
 ```{r per_month}
-month_names <- c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
-per_month <- ggplot(usable_sales %>% mutate(month = factor(month, labels = month_names)), aes(x = month)) +
+per_month <- ggplot(usable_sales %>% mutate(month = factor(month, labels = month.name)), aes(x = month)) +
   theme_bw() +
   geom_histogram() +
   theme(legend.position = "bottom") +
   labs(x = "Year", y = "Paintings auctioned per month", fill = "has transaction price?")
 
 dualplot(per_month, "per_month")
+```
+
+Auctions per day of the week
+
+```{r per_weekday}
+usable_sales %>% 
+  mutate(
+    wday = factor(wday, labels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")), 
+    is_christies = auction_house == "Christie's") %>% 
+  filter(auction_house %in% c("Christie's", "Foster (Edward)")) %>% 
+  ggplot(aes(x = wday)) +
+  theme_bw() +
+  facet_wrap(~auction_house) +
+  geom_histogram()
 ```
 
 We are interested in measuring how temporally-concentrated sales were in a given
@@ -217,13 +230,16 @@ cv_results <- bind_rows(
   group_by(set) %>% 
   do(cv_trends(., n_days = n_days)) %>% 
   filter(type == "count_cv") %>% 
+  rename(price_bin = price_factor) %>% 
   ggplot(aes(x = year, y = cv, color = estimate)) +
   geom_point(size = 3, alpha = 0.5) +
   geom_smooth(method = "lm", se = TRUE) +
-  facet_grid(set ~ price_factor) +
+  facet_grid(set ~ price_bin) +
+  ggtitle("price quintile") +
   theme_bw() +
   scale_color_gradient(low = "red", high = "black") +
   theme(
+    plot.title = element_text(size = rel(1)),
     legend.position = "none",
     axis.text.x = element_text(angle = 45, hjust = 1)
   ) +
@@ -231,7 +247,9 @@ cv_results <- bind_rows(
     x = "Year",
     y = paste0("Coefficient of variation of the top ", n_days, " days per year")
   )
-
+svg("cv.svg")
+cv_results
+dev.off()
 dualplot(cv_results, "cv_results", h = 7, w = 9)
 ```
 
@@ -369,14 +387,15 @@ houses <- usable_sales %>%
   ungroup()
 
 house_dist <- ggplot(houses, aes(x = year)) +
-  geom_jitter(aes(y = yday, color = auction_house), size = 3, alpha = 0.7) +
-  # geom_line(data = ra_dates, aes(x = exhib_year, y = exhib_start_day), size = 1, color = "black") +
-  # geom_line(data = ra_dates, aes(x = exhib_year, y = exhib_end_day), size = 1, color = "black") +
+geom_jitter (aes(y = yday, color = auction_house), size = 4, alpha = 0.5) +
+  geom_line(data = ra_dates, aes(x = exhib_year, y = exhib_start_day), size = 1, color = "black") +
+  geom_line(data = ra_dates, aes(x = exhib_year, y = exhib_end_day), size = 1, color = "black") +
   yday_months_y +
   theme_bw() +
+  scale_color_brewer(type = "qual", palette = 6) +
   xlim(1780, 1835) +
   theme(legend.position = "bottom") +
   labs(x = NULL, y = paste("date of top", n_days, "days"), color = "auction house")
 
-dualplot(house_dist, "house_dist", h = 7)
+dualplot(house_dist, "house_dist", h = 6)
 ```
