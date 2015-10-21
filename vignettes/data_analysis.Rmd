@@ -79,7 +79,7 @@ christies_sales <- usable_sales %>% filter(auction_house == "Christie's")
 other_sales <- usable_sales %>% filter(!auction_house %in% c("Christie's"))
 ```
 
-Auctions per year
+## Auctions per year
 
 ```{r per_year}
 per_year <- ggplot(usable_sales, aes(x = year)) +
@@ -91,7 +91,7 @@ per_year <- ggplot(usable_sales, aes(x = year)) +
 dualplot(per_year, "per_year")
 ```
 
-Auctions per month
+## Auctions per month
 
 ```{r per_month}
 per_month <- ggplot(usable_sales %>% mutate(month = factor(month, labels = month.name)), aes(x = month)) +
