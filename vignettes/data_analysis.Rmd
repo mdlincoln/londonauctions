@@ -98,7 +98,8 @@ per_month <- ggplot(usable_sales %>% mutate(month = factor(month, labels = month
   theme_bw() +
   geom_histogram() +
   theme(legend.position = "bottom") +
-  labs(x = "Year", y = "Paintings auctioned per month", fill = "has transaction price?")
+  labs(x = "Year", y = "Paintings auctioned per month", fill = "has transaction price?") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 dualplot(per_month, "per_month")
 ```
