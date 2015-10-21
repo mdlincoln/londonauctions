@@ -257,77 +257,38 @@ regardless of measurement method. Similarly, we find that the spread of top days
 
 ## Royal Academy Dates
 
-```{r ra}
+Did Christie's navigate with houses like Fosters and Phillips to find slots on the calendar year? And how did they position themselves relative to the royal acadmey?
 
-# Plot top N days against RA exhibition dates
-
-ra_overlap <- bind_rows(
-  "all sales" = all_sales,
-  "Christie's only" = christies_sales,
-  "other houses" = other_sales,
-  .id = "set"
-) %>% 
-  inner_join(ra_dates %>% select(year = exhib_year, exhib_start_day, exhib_end_day), by = "year") %>%
+```{r auction_house_shuffle}
+houses <- usable_sales %>% 
   mutate(
-    after_start = yday >= exhib_start_day,
-    during_exhib = yday >= exhib_start_day & yday <= exhib_end_day) %>% 
-  filter(price_factor == 5)
-
-ggplot(ra_overlap, aes(x = year, weight = transaction_amt, fill = during_exhib)) +
-  geom_density(position = "fill", alpha = 0.6) +
-  scale_fill_brewer(type = "qual", palette = 6) +
-  facet_wrap(~set) +
-  theme_bw()
-
-ra_ribbon <- ra_overlap %>% 
-  group_by(set, year) %>% 
-  mutate()
-  
-
-# Join a table with the top N days together
-ra_overlap <- peak_n %>%
-  left_join(peak_sum, by = c("year", "price_factor")) %>%
-  left_join(peak_avg, by = c("year", "price_factor")) %>%
-  gather(type, yday, count_day, sum_day, avg_day) %>%
-  distinct() %>%
-  # Join the Royal Academy exhibition dates, and calculate which ones take place
-  # during the exhibition
-  inner_join(ra_dates %>% select(year = exhib_year, exhib_start_day, exhib_end_day), by = "year") %>%
-  mutate(during_exhib = yday >= exhib_start_day & yday <= exhib_end_day) %>%
-  # Keep only selected quintiles, and re-label the type factor
-  filter(price_factor == 5) %>%
-  mutate(
-    type = factor(
-      type,
-      levels = c("avg_day", "count_day", "sum_day"),
-      labels = c( "Highest average price", "Highest number of sales", "Higest total revenue"))) %>% 
-  # Calculate the ratio of top N days that take place during the RA exhibition
-  group_by(year, price_factor, type) %>% 
-  mutate(n = mean(during_exhib)) %>% 
+    # Label top three houses, and an 'Other' category
+    auction_house = ifelse(auction_house %in% c("Christie's", "Foster (Edward)", "Phillips (Harry)"), auction_house, "Other"),
+    # Arrange facets so 'Other' is displayed at left
+    auction_house = factor(auction_house, levels = c("Christie's", "Phillips (Harry)", "Foster (Edward)", "Other"))
+  ) %>% 
+  # Actually, we don't want to show other... it's too confusing
+  filter(price_factor %in% c(5), auction_house != "Other") %>% 
+  group_by(auction_house) %>% 
+  do(peak_n(df = ., n_days = 7)) %>% 
   ungroup()
-  
-ra_plot <- ggplot(ra_overlap, aes(x = year, y = yday)) +
-  geom_point(size = 2, alpha = 0.5) +
-  geom_ribbon(aes(ymin = exhib_start_day, ymax = exhib_end_day, na.rm = TRUE), alpha = 0.0) +
-  #geom_rug(aes(color = n), size = 2, sides = "b") +
-  scale_color_gradient(low = "white", high = "red") +
-  facet_wrap(~ type, nrow = 1) +
-  theme_bw() +
-  theme(
-    legend.position = "bottom",
-    axis.text.x = element_text(angle = 45, hjust = 1)
-  ) +
-  labs(
-    x = "Year",
-    y = "Day of the year",
-    color = "Ratio of top auction days
-    during RA exhibition",
-    alpha = "Royal Exhibition open"
-  ) +
-  ylim(1, 365)
 
-dualplot(ra_plot, "ra_plot")
+house_dist <- ggplot(houses, aes(x = year)) +
+  geom_point(aes(y = yday, color = auction_house, size = metric), alpha = 0.5) +
+  geom_line(data = ra_dates, aes(x = exhib_year, y = exhib_start_day), size = 0.7, color = "black") +
+  geom_line(data = ra_dates, aes(x = exhib_year, y = exhib_end_day), size = 0.7, color = "black") +
+  yday_months_y +
+  theme_bw() +
+  scale_color_brewer(type = "qual", palette = 6, guide = "none") +
+  xlim(1780, 1835) +
+  theme(legend.position = "bottom") +
+  labs(x = NULL, y = paste("date of top", n_days, "days"), size = "number of sales") +
+  facet_wrap(~ auction_house, nrow = 1)
+
+dualplot(house_dist, "house_dist", h = 6)
 ```
+
+## Parliament Dates
 
 We can also plot the parliament session dates for the same period. Around
 1780-1800, the top sales days were generally spread from the start of parliament
@@ -370,30 +331,4 @@ par_plot <- ggplot(parliament_overlap, aes(x = year, y = yday)) +
   ylim(1, 365)
 
 dualplot(par_plot, "par_plot")
-```
-
-
-Did Christie's navigate with houses like Fosters and Phillips to find slots on the calendar year?
-
-```{r auction_house_shuffle}
-houses <- usable_sales %>%
-  filter(
-    auction_house %in% c("Christie's", "Foster (Edward)", "Phillips (Harry)") &
-      price_factor == 5) %>% 
-  group_by(auction_house) %>% 
-  do(peak_n(df = ., n_days = 7)) %>% 
-  ungroup()
-
-house_dist <- ggplot(houses, aes(x = year)) +
-geom_jitter (aes(y = yday, color = auction_house), size = 4, alpha = 0.5) +
-  geom_line(data = ra_dates, aes(x = exhib_year, y = exhib_start_day), size = 1, color = "black") +
-  geom_line(data = ra_dates, aes(x = exhib_year, y = exhib_end_day), size = 1, color = "black") +
-  yday_months_y +
-  theme_bw() +
-  scale_color_brewer(type = "qual", palette = 6) +
-  xlim(1780, 1835) +
-  theme(legend.position = "bottom") +
-  labs(x = NULL, y = paste("date of top", n_days, "days"), color = "auction house")
-
-dualplot(house_dist, "house_dist", h = 6)
 ```
