@@ -247,9 +247,7 @@ cv_results <- bind_rows(
     x = "Year",
     y = paste0("Coefficient of variation of the top ", n_days, " days per year")
   )
-svg("cv.svg")
-cv_results
-dev.off()
+
 dualplot(cv_results, "cv_results", h = 7, w = 9)
 ```
 
