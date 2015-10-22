@@ -20,6 +20,7 @@ n_days <- 7
 
 yday_months_x <- scale_x_continuous(breaks = cumsum(c(1, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30)), labels = c(month.name), limits = c(0, 365))
 yday_months_y <- scale_y_continuous(breaks = cumsum(c(1, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30)), labels = c(month.name), limits = c(0, 365))
+wday_days_x <- scale_x_continuous(breaks = seq(1,7,1), minor_breaks = NULL, labels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
 ```
 
 ## Getty Sales Catalogs: What are the known unknowns?
@@ -281,18 +282,26 @@ dualplot(house_dist, "house_dist", h = 6)
 ## Auctions per day of the week
 
 ```{r per_weekday}
-weekday_dist <- usable_sales %>% 
+all_ratios <- usable_sales %>% 
+  count(wday) %>% 
+  mutate(ratio = n/sum(n))
+
+select_ratios <- usable_sales %>% 
   filter(auction_house %in% c("Christie's", "Phillips (Harry)", "Foster (Edward)")) %>% 
-  mutate(
-    wday = factor(wday, labels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")),
-    auction_house = factor(auction_house, levels = c("Christie's", "Phillips (Harry)", "Foster (Edward)"))) %>% 
-  ggplot(aes(x = wday, fill = auction_house)) +
-  geom_histogram(alpha = 0.9) +
-  theme_bw() +
+  mutate(auction_house = factor(auction_house, levels = c("Christie's", "Phillips (Harry)", "Foster (Edward)"))) %>% 
+  count(auction_house, wday) %>% 
+  group_by(auction_house) %>% 
+  mutate(ratio = n/sum(n))
+
+weekday_dist <- ggplot(select_ratios, aes(x = wday, y = ratio)) +
+  geom_bar(data = all_ratios, fill = "gray", stat = "identity") +
+  geom_bar(aes(fill = auction_house), stat = "identity", alpha = 0.7) +
   scale_fill_brewer(type = "qual", palette = 6, guide = "none") +
   facet_wrap(~ auction_house, nrow = 1) +
+  theme_bw() +
+  labs(x = "day of the week", y = "ratio of sales") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  labs(x = "day of the week", y = "total sales, 1780-1835")
+  wday_days_x
 
 dualplot(weekday_dist, "weekday_dist")
 ```
