@@ -265,7 +265,7 @@ houses <- usable_sales %>%
   ungroup()
 
 house_dist <- ggplot(houses, aes(x = year)) +
-  geom_point(aes(y = yday, color = auction_house, size = metric), alpha = 0.5) +
+  geom_point(aes(y = yday, color = auction_house, size = metric), alpha = 0.2) +
   geom_line(data = ra_dates, aes(x = exhib_year, y = exhib_start_day), size = 0.7, color = "black") +
   geom_line(data = ra_dates, aes(x = exhib_year, y = exhib_end_day), size = 0.7, color = "black") +
   yday_months_y +
@@ -278,6 +278,8 @@ house_dist <- ggplot(houses, aes(x = year)) +
 
 dualplot(house_dist, "house_dist", h = 6)
 ```
+
+Did the RA exhibition become more popular over this period? We can look at the takings per day for the RA, which we have available up until 
 
 ## Auctions per day of the week
 
