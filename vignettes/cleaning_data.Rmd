@@ -239,7 +239,7 @@ the remainder are incomplete. Here we convert the year, month, and day fields in
 the original table into formatted date columns ready for processing.
 
 ```{r parse_ra_data}
-raw_ra <- read_csv(system.file("extdata", "ra_dates.csv", package = "londonauctions"), col_types = "iiiii")
+raw_ra <- read_csv(system.file("extdata", "ra_dates.csv", package = "londonauctions"), col_types = "iiiiin")
 
 ra_dates <- raw_ra %>%
   mutate(
@@ -251,7 +251,7 @@ ra_dates <- raw_ra %>%
     exhib_end_day = yday(exhib_end) %>% as.integer(),
     exhib_year = year(exhib_start) %>% as.integer()
   ) %>%
-  select(contains("exhib"))
+  select(contains("exhib"), takings)
 ```
 
 # Parliament dates
