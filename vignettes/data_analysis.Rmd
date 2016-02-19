@@ -12,6 +12,7 @@ vignette: >
 ```{r libraries, echo=FALSE, warnings = FALSE, message = FALSE, tidy = TRUE}
 knitr::opts_chunk$set(warnings = FALSE, message = FALSE, fig.width = 7, fig.height = 5)
 library(londonauctions)
+library(extrafont)
 library(tidyr)
 library(dplyr)
 library(ggplot2)

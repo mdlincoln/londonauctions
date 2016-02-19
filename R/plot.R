@@ -1,11 +1,11 @@
 #' pngplot
 pngplot <- function(p, name, h, w) {
-  ggsave(p, filename = paste(name, "png", sep = "."), height = h, width = w)
+  ggsave(p, filename = paste(name, "png", sep = "."), height = h, width = w, family = "Avenir Next Condensed")
 }
 
 #' pdfplot
 pdfplot <- function(p, name, h, w) {
-  ggsave(p, filename = paste(name, "pdf", sep = "."), height = h, width = w)
+  ggsave(p, filename = paste(name, "pdf", sep = "."), height = h, width = w, family = "Avenir Next Condensed")
 }
 
 #' dualplot
