@@ -19,6 +19,11 @@
 #'  \item{yday}{Integer. Day of the year.}
 #'  \item{mday}{Integer. Day of the month.}
 #'  \item{wday}{Integer. Day of the week.}
+#'  \item{transaction}{Character. Verbatim text of the transaction from the Getty catalogs.}
+#'  \item{artists}{Character. Verbatim text of artist names from the Getty catalogs. Multiple names are delimited with a semicolon.}
+#'  \item{title}{Character. Verbatim title of the artwork from the Getty catalogs.}
+#'  \item{sellers}{Character. Verbatim text of seller names from the Getty catalogs. Multiple names are delimited with a semicolon.}
+#'  \item{buyers}{Character. Verbatim text of buyer names from the Getty catalogs. Multiple names are delimited with a semicolon.}
 #' }
 #'
 "sales"
