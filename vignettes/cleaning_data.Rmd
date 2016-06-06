@@ -8,7 +8,7 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-```{r libraries}
+```{r libraries, include=FALSE}
 library(dplyr)
 library(readr)
 library(stringr)
@@ -273,12 +273,8 @@ parliament_dates <- read_csv(system.file("extdata", "parliament_dates.csv", pack
 They Getty has not yet input all of its historical sales catalogs. This table describes the data entry progress of known sale catalogs as of 8/19/2015.
 
 ```{r getty_input}
-getty_catalogs <- read_csv(system.file("extdata", "catalog_completion.csv", package = "londonauctions")) %>% 
+getty_catalogs <- read_csv(system.file("extdata", "catalog_completion.csv", package = "londonauctions"), col_types = "ccc") %>% 
   mutate(
     is_input = ifelse(is_input == "yes", TRUE, FALSE),
-    sale_begin = ymd(sale_begin),
-    year = year(sale_begin) %>% as.integer()
-  ) %>% 
-  # There is one malformed row with a bad date that we must remove
-  filter(year > 1500)
+    year = as.integer(str_match(sale_begin, "^(\\d{4})/")[,2]))
 ```
