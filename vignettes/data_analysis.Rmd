@@ -9,10 +9,9 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r libraries, echo=FALSE, warnings = FALSE, message = FALSE, tidy = TRUE}
-knitr::opts_chunk$set(warnings = FALSE, message = FALSE, fig.width = 7, fig.height = 5)
+```{r libraries, include=FALSE, tidy = TRUE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, fig.height = 5, dev = "svg")
 library(londonauctions)
-library(extrafont)
 library(tidyr)
 library(dplyr)
 library(ggplot2)
