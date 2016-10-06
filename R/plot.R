@@ -13,7 +13,7 @@ pdfplot <- function(p, name, h, w) {
 #' dualplot
 #' @export
 dualplot <- function(p, name, h = 5, w = 8) {
-  name <- paste("~/Development/londonauctions/inst/plots", name, sep = "/")
+  name <- paste("../inst/plots", name, sep = "/")
   pngplot(p, name, h, w)
   pdfplot(p, name, h, w)
   return(p)
