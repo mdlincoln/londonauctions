@@ -1,7 +1,6 @@
 .Rproj.user
 .Rhistory
 .RData
-*.Rproj
 inst/doc
 inst/plots
 vignettes/*.R
