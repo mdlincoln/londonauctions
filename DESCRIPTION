@@ -12,11 +12,12 @@ LazyData: TRUE
 Suggests:
     knitr,
     readr,
-    dplyr,
     stringr,
     lubridate,
     tidyr,
-    broom,
+    broom
+Depends:
+    dplyr,
     ggplot2
 VignetteBuilder: knitr
 RoxygenNote: 5.0.1
