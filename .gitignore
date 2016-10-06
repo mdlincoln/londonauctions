@@ -6,3 +6,5 @@ inst/doc
 inst/plots
 vignettes/*.R
 vignettes/*.html
+bas_export
+*_files

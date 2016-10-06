@@ -16,6 +16,7 @@ library(tidyr)
 library(dplyr)
 library(ggplot2)
 library(broom)
+library(readr)
 n_days <- 7
 
 yday_months_x <- scale_x_continuous(breaks = cumsum(c(1, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30)), labels = c(month.name), limits = c(0, 365))
@@ -212,20 +213,35 @@ factors of artworks, while each row represents a different measurement method.
 # can use ggplot to color each facet based on the value. Plot the change in 
 # distribution of these top days between 1780-1840, coloring the plots based on
 # the magnitude of the predicted change.
-cv_results <- bind_rows(
+cv_results_points <- bind_rows(
   "all sales" = all_sales, 
   "Christie's only" = christies_sales, 
   "other houses" = other_sales, 
-  .id = "set"
-) %>% 
+  .id = "set") %>% 
   group_by(set) %>% 
-  do(cv_trends(., n_days = n_days)) %>% 
+  do(all_peaks(., n_days)) %>% 
+  ungroup() %>% 
   filter(type == "count_cv") %>% 
-  rename(price_bin = price_factor) %>% 
-  ggplot(aes(x = year, y = cv, color = estimate)) +
-  geom_point(size = 3, alpha = 0.5) +
-  geom_smooth(method = "lm", se = TRUE) +
-  facet_grid(set ~ price_bin) +
+  select(-type)
+
+cv_results_lm <- cv_results_points %>% 
+  group_by(set, price_factor) %>% 
+  do(tidy(lm(cv ~ year, data = .))) %>% 
+  filter(term == "year")
+
+cv_results_estimate <- cv_results_points %>% 
+  group_by(set, price_factor) %>% 
+  do(augment(lm(cv ~ year, data = .)))
+
+cv_combined <- cv_results_estimate %>% inner_join(cv_results_lm, by = c("set", "price_factor"))
+# Underlying plot data to be shared with BAS visualization contractor
+write_csv(cv_combined, path = "../bas_export/cv_combined.csv")
+
+cv_results_plot <- ggplot(cv_combined, aes(x = year, color = estimate)) +
+  geom_point(aes(y = cv), size = 3, alpha = 0.5) +
+  geom_ribbon(aes(ymin = .fitted - .se.fit, ymax = .fitted + .se.fit), color = NA, alpha = 0.4) +
+  geom_line(aes(y = .fitted)) +
+  facet_grid(set ~ price_factor) +
   ggtitle("price quintile") +
   theme_bw() +
   scale_color_gradient(low = "red", high = "black") +
@@ -239,7 +255,7 @@ cv_results <- bind_rows(
     y = paste0("Coefficient of variation of the top ", n_days, " days per year")
   )
 
-dualplot(cv_results, "cv_results", h = 7, w = 9)
+dualplot(cv_results_plot, "cv_results", h = 7, w = 9)
 ```
 
 A benefit of this facetting is the ability to quickly discern that, in this
@@ -259,10 +275,24 @@ houses <- usable_sales %>%
     auction_house = factor(auction_house, levels = c("Christie's", "Phillips (Harry)", "Foster (Edward)", "Other"))
   ) %>% 
   # Actually, we don't want to show other... it's too confusing
-  filter(price_factor %in% c(5), auction_house != "Other") %>% 
-  group_by(auction_house) %>% 
+  filter(price_factor %in% c(1:5), auction_house != "Other") %>% 
+  group_by(price_factor, auction_house) %>% 
   do(peak_n(df = ., n_days = 7)) %>% 
   ungroup()
+
+jh <- houses %>% inner_join(usable_sales, by = c("auction_house", "price_factor", "year", "yday")) %>% 
+  select(auction_house, year, price_factor, yday, metric, objnum) %>% 
+  nest(objnum) %>% 
+  jsonlite::toJSON()
+
+format_jh <- jh %>% 
+  as.character() %>%
+  jqr::jq(".[] | {auction_house: .auction_house, year: .year, yday: .yday, price_factor: .price_factor, metric: .metric, objects: [.data[].objnum]}")
+write(format_jh, file = "bas_export/nested_houses.json")
+
+write_csv(sample_n(usable_sales, 100), path = "bas_export/sample_sales.csv")
+write_csv(houses, path = "bas_export/houses.csv")
+write_csv(ra_dates, path = "bas_export/ra_dates.csv")
 
 house_dist <- ggplot(houses, aes(x = year)) +
   geom_point(aes(y = yday, color = auction_house, size = metric), alpha = 0.2) +
@@ -274,7 +304,7 @@ house_dist <- ggplot(houses, aes(x = year)) +
   xlim(1780, 1835) +
   theme(legend.position = "bottom") +
   labs(x = NULL, y = paste("date of top", n_days, "days"), size = "number of sales") +
-  facet_wrap(~ auction_house, nrow = 1)
+  facet_grid(price_factor ~ auction_house)
 
 dualplot(house_dist, "house_dist", h = 6)
 ```
