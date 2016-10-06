@@ -27,6 +27,11 @@ wday_days_x <- scale_x_continuous(breaks = seq(1,7,1), minor_breaks = NULL, labe
 ## Getty Sales Catalogs: What are the known unknowns?
 
 ```{r getty_distribution}
+if (!dir.exists("../bas_export"))
+  dir.create("../bas_export")
+    
+write_csv(getty_catalogs, path = "../bas_export/1_getty_catalogs.csv")
+  
 getty_distribution <- ggplot(getty_catalogs, aes(x = year, fill = is_input)) +
     geom_histogram(binwidth = 1) +
     scale_fill_brewer(type = "qual", palette = 6) +
@@ -52,7 +57,11 @@ setting up the pricing categories.
 # Filter out sales whose prices are uncertain or which are doubled, while NOT 
 # YET discarding those that had no price to begin with; these can be handled in
 # later analysis.
-usable_sales <- sales %>% filter(amt_is_uncertain == FALSE & has_double_price == FALSE & transaction_type %in% c("sold", "bought in", "sold or bought in"))
+usable_sales <- sales %>% 
+  filter(
+    amt_is_uncertain == FALSE & 
+      has_double_price == FALSE & 
+      transaction_type %in% c("sold", "bought in", "sold or bought in"))
 ```
 
 ## Price factor
@@ -84,8 +93,11 @@ other_sales <- usable_sales %>% filter(!auction_house %in% c("Christie's"))
 ## Auctions per year
 
 ```{r per_year}
-per_year <- ggplot(usable_sales, aes(x = year)) +
-  geom_histogram(binwidth = 1) +
+per_year_sales <- usable_sales %>% count(year)
+write_csv(per_year_sales, "../bas_export/2_usable_sales.csv")
+
+per_year <- ggplot(per_year_sales, aes(x = year, y = n)) +
+  geom_bar(stat = "identity") +
   theme_bw() +
   theme(legend.position = "bottom") +
   labs(x = "Year", y = "Painting lots auctioned per year", fill = "has transaction price?")
@@ -96,9 +108,15 @@ dualplot(per_year, "per_year")
 ## Auctions per month
 
 ```{r per_month}
-per_month <- ggplot(usable_sales %>% mutate(month = factor(month, labels = month.name)), aes(x = month)) +
+monthly_sales <- usable_sales %>% 
+  mutate(month = factor(month, labels = month.name)) %>% 
+  count(month)
+
+write_csv(monthly_sales, "../bas_export/3_usable_sales.csv")
+
+per_month <- ggplot(monthly_sales, aes(x = month, y = n)) +
   theme_bw() +
-  geom_bar() +
+  geom_bar(stat = "identity") +
   theme(legend.position = "bottom") +
   labs(x = "Year", y = "Paintings auctioned per month", fill = "has transaction price?") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -145,6 +163,8 @@ cv_examples <- top_examples %>%
   filter(is_top == TRUE) %>% 
   group_by(year) %>% 
   summarize(cv = sd(yday)/mean(yday))
+
+write_csv(top_examples, "../bas_export/4_top_examples.csv")
   
 vis_top_example <- ggplot(top_examples, aes(x = yday, y = n, fill = is_top)) +
   geom_bar(stat = "identity") +
@@ -208,7 +228,7 @@ cacluations by price factor and measurement method. In this figure, the groups
 are vizualized with a faceted grid: each column represents the different price
 factors of artworks, while each row represents a different measurement method.
 
-```{r, fig.height=7}
+```{r cv_results, fig.height=7}
 # Join the significance calculations back onto the top-N-days data, so that we 
 # can use ggplot to color each facet based on the value. Plot the change in 
 # distribution of these top days between 1780-1840, coloring the plots based on
@@ -235,7 +255,7 @@ cv_results_estimate <- cv_results_points %>%
 
 cv_combined <- cv_results_estimate %>% inner_join(cv_results_lm, by = c("set", "price_factor"))
 # Underlying plot data to be shared with BAS visualization contractor
-write_csv(cv_combined, path = "../bas_export/cv_combined.csv")
+write_csv(cv_combined, path = "../bas_export/5_cv_combined.csv")
 
 cv_results_plot <- ggplot(cv_combined, aes(x = year, color = estimate)) +
   geom_point(aes(y = cv), size = 3, alpha = 0.5) +
@@ -275,24 +295,13 @@ houses <- usable_sales %>%
     auction_house = factor(auction_house, levels = c("Christie's", "Phillips (Harry)", "Foster (Edward)", "Other"))
   ) %>% 
   # Actually, we don't want to show other... it's too confusing
-  filter(price_factor %in% c(1:5), auction_house != "Other") %>% 
+  filter(price_factor %in% c(5), auction_house != "Other") %>% 
   group_by(price_factor, auction_house) %>% 
   do(peak_n(df = ., n_days = 7)) %>% 
   ungroup()
 
-jh <- houses %>% inner_join(usable_sales, by = c("auction_house", "price_factor", "year", "yday")) %>% 
-  select(auction_house, year, price_factor, yday, metric, objnum) %>% 
-  nest(objnum) %>% 
-  jsonlite::toJSON()
-
-format_jh <- jh %>% 
-  as.character() %>%
-  jqr::jq(".[] | {auction_house: .auction_house, year: .year, yday: .yday, price_factor: .price_factor, metric: .metric, objects: [.data[].objnum]}")
-write(format_jh, file = "bas_export/nested_houses.json")
-
-write_csv(sample_n(usable_sales, 100), path = "bas_export/sample_sales.csv")
-write_csv(houses, path = "bas_export/houses.csv")
-write_csv(ra_dates, path = "bas_export/ra_dates.csv")
+write_csv(houses, path = "../bas_export/6_houses.csv")
+write_csv(ra_dates, path = "../bas_export/6_ra_dates.csv")
 
 house_dist <- ggplot(houses, aes(x = year)) +
   geom_point(aes(y = yday, color = auction_house, size = metric), alpha = 0.2) +
@@ -324,6 +333,9 @@ select_ratios <- usable_sales %>%
   count(auction_house, wday) %>% 
   group_by(auction_house) %>% 
   mutate(ratio = n/sum(n))
+
+write_csv(all_ratios, path = "../bas_export/7_all_ratios.csv")
+write_csv(select_ratios, path = "../bas_export/7_select_ratios.csv")
 
 weekday_dist <- ggplot(select_ratios, aes(x = wday, y = ratio)) +
   geom_bar(data = all_ratios, fill = "gray", stat = "identity") +
