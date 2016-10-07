@@ -300,6 +300,14 @@ houses <- usable_sales %>%
   do(peak_n(df = ., n_days = 7)) %>% 
   ungroup()
 
+# Report out ratios all top days that fall after August 1st.
+houses %>% 
+  mutate(is_after_august = yday >= 214) %>% 
+  count(auction_house, is_after_august) %>% 
+  spread(is_after_august, n) %>% 
+  mutate(total = `FALSE` + `TRUE`,
+         ratio = `TRUE` / total)
+
 write_csv(houses, path = "../bas_export/6_houses.csv")
 write_csv(ra_dates, path = "../bas_export/6_ra_dates.csv")
 
