@@ -3,6 +3,8 @@
 #' @param df Filtered data frame of sales
 #' @param n_days Number of top days to measure
 #'
+#' @import dplyr
+#'
 #' @return A data frame
 #' @export
 peaks <- function(df) {
@@ -23,6 +25,8 @@ peaks <- function(df) {
 #' Peak N days
 #'
 #' Find the top-N days in terms of daily_count, daily_sum, and daily_avg
+#'
+#' @import dplyr
 #' @export
 peak_n <- function(df, n_days) {
   peaks(df) %>%
@@ -32,6 +36,7 @@ peak_n <- function(df, n_days) {
     ungroup()
 }
 
+#' @import dplyr
 peak_sum <- function(df, n_days) {
   peaks(df) %>%
     group_by(year, price_factor) %>%
@@ -40,6 +45,7 @@ peak_sum <- function(df, n_days) {
     ungroup()
 }
 
+#' @import dplyr
 peak_avg <- function(df, n_days) {
   peaks(df) %>%
     group_by(year, price_factor) %>%
@@ -48,6 +54,7 @@ peak_avg <- function(df, n_days) {
     ungroup()
 }
 
+#' @import dplyr
 #' @export
 all_peaks <- function(df, n_nays) {
   peak_n(df, n_days) %>% rename(count_day = yday) %>% group_by(year, price_factor) %>% summarize(count_cv = sd(count_day)/mean(count_day)) %>%
@@ -59,6 +66,7 @@ all_peaks <- function(df, n_nays) {
 
 # Run linear regressions to find corellation between the year and the spread of
 # top auction days
+#' @import dplyr
 peak_models <- function(df, n_days) {
   all_peaks(df, n_days) %>%
     group_by(price_factor, type) %>%
@@ -69,6 +77,7 @@ peak_models <- function(df, n_days) {
 }
 
 #' CV trends
+#' @import dplyr
 #' @export
 cv_trends <- function(df, n_days = 7) {
   all_peaks(df, n_days) %>% inner_join(peak_models(df, n_days), by = c("price_factor", "type"))

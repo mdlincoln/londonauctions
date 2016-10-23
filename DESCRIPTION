@@ -4,9 +4,12 @@ Title: Data, analysis, and figures for Lincoln and Fox 2016
 Version: 1.0
 Date: 2016-10-24
 Authors@R: c(
-  person("Matthew Lincoln", email = "matthew.d.lincoln@gmail.com", role = c("aut", "cre")),
+  person("Matthew Lincoln", email = "matthew.d.lincoln@gmail.com",
+    role = c("aut", "cre")),
   person("Abram Fox", email = "abramfox@gmail.com", role = "ctb"))
-Description: More about what it does (maybe more than one line)
+Description: Data, helper functions, cleaning, and analysis code for Matthew
+    Lincoln and Abram Fox, "The Temporal Dimensions of the London Art Auction,
+    1780-1835", British Art Studies, no. 4 (Fall 2016)
 License: MIT + file LICENSE
 LazyData: TRUE
 Suggests:
@@ -15,8 +18,7 @@ Suggests:
     stringr,
     lubridate,
     tidyr,
-    broom
-Depends:
+    broom,
     dplyr,
     ggplot2
 VignetteBuilder: knitr
