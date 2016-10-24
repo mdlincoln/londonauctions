@@ -32,13 +32,13 @@ if (!dir.exists("../bas_export"))
     
 write_csv(getty_catalogs, path = "../bas_export/1_getty_catalogs.csv")
   
-getty_distribution <- ggplot(getty_catalogs, aes(x = year, fill = is_input)) +
+getty_distribution <- ggplot(getty_catalogs, aes(x = year, fill = ifelse(is_input, "Indexed at item level", "Not yet indexed"))) +
     geom_histogram(binwidth = 1) +
     scale_fill_brewer(type = "qual", palette = 6) +
     theme_bw() +
     annotate("rect", xmin = 1780, xmax = 1835, ymin = -Inf, ymax = Inf, alpha = 0.2) +
     annotate("text", x = 1800, y = 175, label = "1780-1835") +
-    labs(x = NULL, y = "number of catalogs", fill = "contents indexed") +
+    labs(x = NULL, y = "number of catalogs", fill = NULL) +
     theme(legend.justification = c(0, 1), legend.position = c(0, 1))
 
 dualplot(getty_distribution, "getty_distribution")
@@ -299,6 +299,14 @@ houses <- usable_sales %>%
   group_by(price_factor, auction_house) %>% 
   do(peak_n(df = ., n_days = 7)) %>% 
   ungroup()
+
+# Report out ratios all top days that fall after August 1st.
+houses %>% 
+  mutate(is_after_august = yday >= 214) %>% 
+  count(auction_house, is_after_august) %>% 
+  spread(is_after_august, n) %>% 
+  mutate(total = `FALSE` + `TRUE`,
+         ratio = `TRUE` / total)
 
 write_csv(houses, path = "../bas_export/6_houses.csv")
 write_csv(ra_dates, path = "../bas_export/6_ra_dates.csv")
