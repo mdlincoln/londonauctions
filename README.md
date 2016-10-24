@@ -11,7 +11,7 @@ To install this package from GitHub, run the following code in an R session:
 
 ```{r}
 install.packages(devtools)
-devtools::install_github("mdlincoln/londonacutions")
+devtools::install_github("mdlincoln/londonauctions")
 ```
 
 If you have downloaded this package as a .tar.gz file (i.e. if you accessed a specific version from Zenodo), open an R session inside the unzipped package directory and run the following code:
