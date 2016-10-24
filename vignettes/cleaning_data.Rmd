@@ -26,12 +26,19 @@ working copy of it.
 
 ```{r load_data}
 # Read in the original data file as one long column of text
-one_col <- data_frame(text = read_lines(system.file("extdata", "britishsales.txt", package = "londonauctions")))
+one_col <- data_frame(text = read_lines(system.file("extdata", "britishsales1.txt", package = "londonauctions")))
+
+two_col <- data_frame(text = read_lines(system.file("extdata", "britishsales2.txt", package = "londonauctions")))
+
+three_col <- data_frame(text = read_lines(system.file("extdata", "britishsales3.txt", package = "londonauctions")))
+
+
+comb_col <- bind_rows(one_col, two_col, three_col)
 
 # These are the variables we want to preserve for each record
 req_vars <- c("--RECORD NUMBER--", "BBF Number", "Lot Number", "Edit Status", "Lot Sale Date", "Sale Begin Date", "Sale End Date", "Transaction", "Price", "Auct.House Auth.", "Verbatim Artist", "Title", "Verbatim Seller", "Verbatim Buyer")
 
-sales <- one_col %>%
+sales <- comb_col %>%
   # Split the single column of text into two cols: variable and value
   separate(text, into = c("variable", "value"), sep = 17) %>%
   # Trim any whitespace from either column
@@ -52,8 +59,6 @@ sales <- one_col %>%
   # Double-check that we now have only one row per object number
   verify(n_distinct(.$objnum) == nrow(.)) %>% 
   ungroup()
-
-remove(one_col)
 
 # Original number of records:
 nrow(sales)
