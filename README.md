@@ -2,10 +2,9 @@ This R package contains the raw data and processing scripts used for the article
 
 ## Installation
 
-Required Software
+Required software: R, freely available at <https://www.r-project.org/>
 
-R: freely available at <https://www.r-project.org/>
-RStudio: an integrated development environment, free for individual use at <https://www.rstudio.com/>
+Optional software: RStudio, an integrated development environment, free for individual use at <https://www.rstudio.com/>
 
 To install this package from GitHub, run the following code in an R session:
 
