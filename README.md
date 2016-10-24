@@ -7,8 +7,19 @@ Required Software
 R: freely available at <https://www.r-project.org/>
 RStudio: an integrated development environment, free for individual use at <https://www.rstudio.com/>
 
-To install this package, begin an R session within this directory.
-On starting the R session, all the dependencies for this package, as well as this package itself, will be automatically installed from the included [packrat archive]
+To install this package from GitHub, run the following code in an R session:
+
+```{r}
+install.packages(devtools)
+devtools::install_github("mdlincoln/londonacutions")
+```
+
+If you have downloaded this package as a .tar.gz file (i.e. if you accessed a specific version from Zenodo), open an R session inside the unzipped package directory and run the following code:
+
+```{r}
+install.packages(devtools)
+devtools::install(dependencies = TRUE)
+```
 
 ## Contents
 
@@ -19,7 +30,7 @@ Docuemntation of any of these data frames can be opened by using, e.g., `?sales`
 A list of all data frames available in this package can be seen by calling `?londonauctions`.
 
 `vignettes/data_analysis.Rmd` contains all the code used to produce each of the plots and tables shown in the article.
-When that code is run, it will save output plots to `inst/plots`.
+When that code is run, it will save generated plots to `inst/plots`.
 
 ---
 Corresponding author: [Matthew Lincoln](http://matthewlincoln.net)
