@@ -1,5 +1,7 @@
 This R package contains the raw data and processing scripts used for the article: Matthew Lincoln and Abram Fox, "The Temporal Dimensions of the London Art Auction, 1780-1835", _British Art Studies_ no. 4, (Fall 2016).
 
+This data package is archived wtih Zenodo: [![DOI](https://zenodo.org/badge/71730706.svg)](https://zenodo.org/badge/latestdoi/71730706)
+
 ## Installation
 
 Required software: R, freely available at <https://www.r-project.org/>
@@ -13,7 +15,7 @@ install.packages(devtools)
 devtools::install_github("mdlincoln/londonauctions")
 ```
 
-If you have downloaded this package as a .tar.gz file (i.e. if you accessed a specific version from Zenodo), open an R session inside the unzipped package directory and run the following code:
+If you have downloaded this package as a `.tar.gz` file (i.e. if you accessed a specific version from Zenodo), open an R session inside the unzipped package directory and run the following code:
 
 ```{r}
 install.packages(devtools)
